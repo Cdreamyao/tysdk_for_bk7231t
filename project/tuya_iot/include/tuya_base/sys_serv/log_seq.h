@@ -22,7 +22,7 @@
 /***********************************************************
 *************************micro define***********************
 ***********************************************************/
-#define STR_DATA_MAX_LENGTH 16
+#define STR_DATA_MAX_LENGTH 64
 
 typedef BYTE_T LS_DATA_TP_T; // log sequence data type
 #define LDT_NULL 0
@@ -55,13 +55,28 @@ typedef BYTE_T LS_STAT_T;
 #define HTTP_FLOW     "http"
 #define SMT_CFG       "smt_cfg"
 #define AP_CFG        "ap_cfg"
+#define OTA_FLOW      "ota"
 
 //net_cfg log seq log_seq list
 #define LOG_SEQ_TOKEN_NUM 1
 #define LOG_SEQ_CFG_ERR_NUM 2
 #define LOG_SEQ_CFG_TIME_NUM 3
 #define LOG_SEQ_OTHER_START 5
-    
+
+//ota log seq list
+#define LOG_SEQ_OTA_UPGRADETYPE         1       //upgradeType
+#define LOG_SEQ_OTA_TRACEID             2
+#define LOG_SEQ_OTA_TP                  3       //CLOUD_DEV_TP_DEF_T
+#define LOG_SEQ_OTA_CID                 4       //CID
+#define LOG_SEQ_OTA_START_TIMESTAMP     6       //TIMESTAMP
+#define LOG_SEQ_OTA_END_TIMESTAMP       7       //TIMESTAMP
+
+#define OTA_UPGRADETYPE_APP         1           //APP引导升级
+#define OTA_UPGRADETYPE_SILENT      2           //静默升级
+
+#define LOG_SEQ_OTA_UPGRD_PERCENT   14
+#define LOG_SEQ_OTA_ERR_HMAC        16
+
 // Calling when record the error log sequence
 struct s_log_seq;
 typedef VOID (*LOG_SEQ_ERROR_PROC_CB)(IN struct s_log_seq *ls,IN CONST UINT_T timestamp,IN CONST BYTE_T err_repeat);
@@ -270,6 +285,7 @@ extern VOID log_serv_handle_err_log_seq_cb(IN L0G_SEQ_S *ls,IN CONST UINT_T time
 extern VOID log_serv_handle_mqtt_err_log_seq_cb(IN L0G_SEQ_S *ls,IN CONST UINT_T timestamp,IN CONST BYTE_T err_repeat);
 extern VOID log_serv_handle_netcfg_err_log_seq_cb(IN L0G_SEQ_S *ls,IN CONST UINT_T timestamp,IN CONST BYTE_T err_repeat);
 
+VOID log_serv_handle_ota_err_log_seq_cb(IN L0G_SEQ_S *ls,IN CONST UINT_T timestamp,IN CONST BYTE_T err_repeat);
 
 
 

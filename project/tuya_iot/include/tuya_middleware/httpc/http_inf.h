@@ -40,9 +40,11 @@ typedef struct {
 // user http respond callback
 typedef OPERATE_RET (*HTTP_INF_CB)(HTTP_INF_H_S *hand);
 
+#define     MAX_URL_CNT         10
 typedef struct {
     BYTE_T total;
     BYTE_T cnt;
+    BOOL_T sign_flag[MAX_URL_CNT];
     CHAR_T *pos[0];
 }HTTP_PARAM_H_S;
 

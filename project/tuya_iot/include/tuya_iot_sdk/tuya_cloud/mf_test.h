@@ -36,7 +36,7 @@ typedef VOID (*MF_UART_SEND_CB)(IN CONST BYTE_T *data,IN CONST UINT_T len);
 typedef UINT_T (*MF_UART_RECV_CB)(OUT BYTE_T *buf,IN CONST UINT_T len);
 
 // in gpio test
-typedef BOOL_T (*MF_GPIO_TEST_CB)(VOID);
+typedef BOOL_T (*MF_GPIO_TEST_CB)(IN CONST CHAR_T *in, OUT CHAR_T *out);
 
 // uart free
 typedef VOID (*MF_UART_FREE_CB)(VOID);

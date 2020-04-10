@@ -154,6 +154,8 @@ typedef int OPERATE_RET;
 #define OPRT_SECURITY_VERIFY_NOT_OK         (-1008)
 #define OPRT_FLASH_NOT_ENOUGH_PAGE          (-1009)
 #define OPRT_ERASE_FLASH_ERROR              (-1088) // check the return value by custom
+#define OPRT_OTA_BIN_CHECK_ERROR            (-1089) // check the ota bin head
+#define OPRT_OTA_BIN_SIZE_ERROR             (-1090) // check the ota bin head
 
 #define OPRT_OSS_OPERATION_INIT_FAILED      (-1100)
 #define OPRT_OSS_OPERATION_UPDATE_FAILED    (-1101)

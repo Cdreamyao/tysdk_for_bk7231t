@@ -37,15 +37,16 @@ MEMORY
 OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
 OUTPUT_ARCH(arm)
 ENTRY(_vector_start);
-_vector_start = 0x00010000;
+_vector_start = ORIGIN(flash);
 
 SECTIONS
 {
 /* vectors go to vectors region */
-	. = 0x00010000;
+	. = ORIGIN(flash);
 	.vectors : 
 	{ 
-      KEEP(*(*.vectors))
+		KEEP(*(*.vectors))
+		KEEP( *(*.boot))
 	} > flash
 
 /* instructions go to the text region*/
@@ -113,16 +114,6 @@ SECTIONS
 
 /* This symbol defines end of code/data sections. Heap starts here. */
 	PROVIDE(end    	  = .);
-	
-/* _stack symbol defines initial stack bottom addres. Stack grows to lower addresses.
-   Typically you set this to be top of your RAM. Note: code never checks, if stack
-   grows into heap area!
-*/
-	PROVIDE(_stack_unused      = 0x440000 - 0x3F0 - 0x7F0 - 0xFF0 - 0x3F0 - 0x10); /* 0x10*/
-	PROVIDE(_stack_svc         = 0x440000 - 0x3F0 - 0x7F0 - 0xFF0 - 0x3F0); /* 0x3F0*/
-	PROVIDE(_stack_irq         = 0x440000 - 0x3F0 - 0x7F0 - 0xFF0); /* 0xFF0*/
-	PROVIDE(_stack_fiq         = 0x440000 - 0x3F0 - 0x7F0); /* 0x7F0*/
-	PROVIDE(_stack_sys         = 0x440000 - 0x3F0); /* 0x3F0*/
 }
  GROUP(
    libgcc.a

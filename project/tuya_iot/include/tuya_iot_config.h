@@ -76,10 +76,11 @@ extern "C" {
 #define OPERATING_SYSTEM	SYSTEM_REALTEK8710_2M
 #define ENABLE_LAN_ENCRYPTION	1
 #define ENABLE_AP_FAST_CONNECT	0
-#define TY_BT_MOD 0
+#define TY_BT_MOD 1
 #define TY_SMART_CONFIG_DISABLE 0
 
 /* default settings */
+#define TY_GPIO_TEST_V2        1
 
 #ifndef WIFI_GW
 #define WIFI_GW 1

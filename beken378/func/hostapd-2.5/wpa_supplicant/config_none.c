@@ -20,6 +20,22 @@
 #include "wlan_ui_pub.h"
 #include "wpa_common.h"
 
+#if CFG_IEEE80211N
+static void wpa_config_ht_cap_by_sec(int sec)
+{
+	if(sec == SECURITY_TYPE_WEP
+		|| sec == SECURITY_TYPE_WPA_TKIP
+		|| sec == SECURITY_TYPE_WPA2_TKIP)
+	{
+		rw_ieee80211_set_ht_cap(0);
+	}
+	else
+	{
+		rw_ieee80211_set_ht_cap(1);
+	}
+}
+#endif
+
 static int wpa_config_validate_network(struct wpa_ssid *ssid, int line)
 {
 	int errors = 0;
@@ -179,6 +195,8 @@ static int security2cipher(struct wpa_ie_data *ie, int security)
 		break;
 	}
     bk_printf("%s %d %d %d %d security=%d\n", __FUNCTION__, ie->key_mgmt, ie->proto, ie->pairwise_cipher, ie->group_cipher, security);
+
+	return 0;
 }
 
 int wpa_config_set_none(struct wpa_ssid *ssid)
@@ -219,6 +237,9 @@ int wpa_config_set_wpa(struct wpa_ssid *ssid, struct wpa_ie_data *ie)
 	ret = set_wpa_psk(ssid);
 	if(!ret){
 		g_sta_param_ptr->cipher_suite = cipher2security(ie);
+		#if CFG_IEEE80211N
+		wpa_config_ht_cap_by_sec(g_sta_param_ptr->cipher_suite);
+		#endif
 		if (ssid->passphrase && (ssid->psk_set == 0)) {
 			wpa_config_update_psk(ssid);
 		}
@@ -232,7 +253,6 @@ static struct wpa_ssid * wpa_config_read_network(int *line, int id)
 	struct wpa_ssid *ssid;
 	struct wpa_ie_data ie;
 	int errors = 0;
-	char buf[20];
 
 	ssid = os_zalloc(sizeof(*ssid));
 	if (ssid == NULL)
@@ -258,6 +278,9 @@ static struct wpa_ssid * wpa_config_read_network(int *line, int id)
 		}else if(g_sta_param_ptr->cipher_suite == SECURITY_TYPE_WEP){
 			errors += wpa_config_set_wep(ssid);			
 		}else{
+			#if CFG_IEEE80211N
+			wpa_config_ht_cap_by_sec(g_sta_param_ptr->cipher_suite);
+			#endif
 			security2cipher(&ie, g_sta_param_ptr->cipher_suite);
 			wpa_config_set_wpa(ssid, &ie);
 		} 
@@ -341,4 +364,3 @@ int wpa_config_write(const char *name, struct wpa_config *config)
 	return 0;
 }
 // eof
-

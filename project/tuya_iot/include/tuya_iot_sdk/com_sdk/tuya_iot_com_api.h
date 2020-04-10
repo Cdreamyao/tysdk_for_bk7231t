@@ -203,7 +203,7 @@ OPERATE_RET tuya_iot_dev_upgd_progress_rept(IN CONST UINT_T percent, IN CONST CH
 *  Output: none
 *  Return: OPERATE_RET
 ***********************************************************/
-OPERATE_RET tuya_iot_dev_upgd_result_report(IN CONST CHAR_T *dev_id, IN CONST DEV_TYPE_T type, IN CONST INT_T result);
+OPERATE_RET tuya_iot_dev_upgd_result_report(IN CONST CHAR_T *dev_id, IN CONST DEV_TYPE_T type, IN CONST CHAR_T *trace_id, IN CONST INT_T result);
 
 /***********************************************************
 *  Function: tuya_iot_gw_unbind_dev

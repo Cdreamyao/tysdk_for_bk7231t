@@ -306,11 +306,11 @@ void ps_msg_process(UINT8 ps_msg)
             power_save_wait_timer_start();
             break;
         case PS_BMSG_IOCTL_RF_PS_TIMER_INIT:
-            bk_wlan_dtim_rf_ps_set_linger_time(20);
-            power_save_set_keep_timer_time(20);
+            //bk_wlan_dtim_rf_ps_set_linger_time(20);
+            power_save_set_keep_timer_time(30);
             break; 
         case PS_BMSG_IOCTL_RF_PS_TIMER_DEINIT:
-            bk_wlan_dtim_rf_ps_set_linger_time(0);
+            //bk_wlan_dtim_rf_ps_set_linger_time(0);
             power_save_set_keep_timer_time(0);
             break; 
 #endif

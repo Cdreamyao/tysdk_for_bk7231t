@@ -102,6 +102,7 @@
 #define configUSE_MALLOC_FAILED_HOOK                ( 1 )
 
 /* Memory */
+#define configDYNAMIC_HEAP_SIZE                   1
 #define configTOTAL_HEAP_SIZE		             ( ( size_t ) ( 105 * 1024 ) )
 
 /* Queue & Semaphore & Mutex */

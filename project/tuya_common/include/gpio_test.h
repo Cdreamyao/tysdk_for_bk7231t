@@ -18,4 +18,4 @@ typedef BYTE_T BOARD_TYPE;
 
 BOOL_T gpio_test_cb(BOARD_TYPE type);
 
-BOOL_T gpio_test_all(VOID);
+BOOL_T gpio_test_all(IN CONST CHAR_T *in, OUT CHAR_T *out);

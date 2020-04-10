@@ -40,7 +40,7 @@ cp project/tuya_user/$APP_BIN_NAME/output/$USER_SW_VER/${APP_BIN_NAME}_${USER_SW
 
 
 cd tools/generate/
-
+./otafix ${APP_BIN_NAME}_${USER_SW_VER}.bin &
 ./encrypt ${APP_BIN_NAME}_${USER_SW_VER}.bin 510fb093 a3cbeadc 5993a17e c7adeb03 10000
 python mpytools.py ${APP_BIN_NAME}_${USER_SW_VER}_enc.bin
 

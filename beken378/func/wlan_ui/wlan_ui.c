@@ -548,6 +548,8 @@ OSStatus bk_wlan_start_sta(hal_wifi_init_type_t *inNetworkInitPara)
 OSStatus bk_wlan_start_sta(network_InitTypeDef_st *inNetworkInitPara)
 #endif
 {
+	rwnxl_reset_evt(0);
+	
     bk_wlan_stop(STATION);
     
     bk_wlan_sta_init(inNetworkInitPara);
@@ -644,6 +646,8 @@ void bk_wlan_start_scan(void)
     bk_wlan_sta_init(0);
 
     os_memset(&scan_param.bssid, 0xff, ETH_ALEN);
+	scan_param.vif_idx = INVALID_VIF_IDX;
+	scan_param.num_ssids = 1;
 
     rw_msg_send_scanu_req(&scan_param);
 }
@@ -698,6 +702,7 @@ void bk_wlan_start_assign_scan(UINT8 **ssid_ary, UINT8 ssid_num)
     bk_wlan_sta_init(0);
 
     os_memset(&scan_param.bssid, 0xff, ETH_ALEN);
+	scan_param.vif_idx = INVALID_VIF_IDX;
     scan_param.num_ssids = ssid_num;
     for (int i = 0 ; i < ssid_num ; i++ )
     {
@@ -1125,7 +1130,7 @@ void bk_wlan_ap_para_info_get(network_InitTypeDef_ap_st *ap_info)
 
 uint32_t bk_wlan_get_INT_status(void)
 {
-    return *((volatile UINT32 *)(ICU_INT_STATUS));
+    return platform_is_in_interrupt_context();
 }
 
 /** @brief  Add the packet type which monitor should receive
@@ -1134,7 +1139,6 @@ uint32_t bk_wlan_get_INT_status(void)
  */
 int bk_wlan_monitor_rx_type(int type)
 {
-    unsigned int filter = 0;
     switch(type)
     {
     case WLAN_RX_BEACON:
@@ -1663,6 +1667,8 @@ ble_data_cb_t bk_wlan_get_ble_cb(void)
 int bk_wlan_start_ble(void)
 {
 	ble_activate(NULL);
+
+	return 0;
 }
 #endif
 

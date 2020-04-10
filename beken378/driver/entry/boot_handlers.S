@@ -31,7 +31,9 @@
 #define _IRQ_STACK_SIZE_ 	              0xFF0
 #define _SVC_STACK_SIZE_ 	              0x3F0
 #define _SYS_STACK_SIZE_ 	              0x3F0
-#define _UNUSED_STACK_SIZE_ 	          0x010
+#define _UND_STACK_SIZE_ 	              0x010
+#define _ABT_STACK_SIZE_                      0x010
+
 
 #define BOOT_MODE_MASK     	              0x1F
 #define BOOT_MODE_USR       	          0x10
@@ -235,39 +237,37 @@
 	BLT   3b           //branch to previous local label
 	.endm
 
-/* ========================================================================
- *                                Globals
- * ======================================================================== */
-boot_stack_base_UNUSED:
-	.word _stack_unused
 
-boot_stack_len_UNUSED:
-	.word _UNUSED_STACK_SIZE_
+	 .section .data
+	 .align 3
+	 .global und_stack_start
+und_stack_start:
+	 .space _UND_STACK_SIZE_
+ 
+	.align 3
+	.global abt_stack_start
+abt_stack_start:
+	 .space _ABT_STACK_SIZE_
 
-boot_stack_base_IRQ:
-	.word _stack_irq
+	.align 3
+	.global fiq_stack_start
+fiq_stack_start:
+	 .space _FIQ_STACK_SIZE_
 
-boot_stack_len_IRQ:
-	.word _IRQ_STACK_SIZE_
+	.align 3
+	.global irq_stack_start
+irq_stack_start:
+	 .space _IRQ_STACK_SIZE_
+ 
+	.align 3
+	.global sys_stack_start
+sys_stack_start:
+	 .space _SYS_STACK_SIZE_
 
-boot_stack_base_SVC:
-   	.word _stack_svc
-
-boot_stack_len_SVC:
-  	 .word _SVC_STACK_SIZE_
-
-boot_stack_base_FIQ:
-  	 .word _stack_fiq
-
-boot_stack_len_FIQ:
-   	.word _FIQ_STACK_SIZE_
-
-boot_stack_base_SYS:
-  	 .word _stack_sys
-
-boot_stack_len_SYS:
-  	 .word _SYS_STACK_SIZE_
-
+	.align 3
+	.global svc_stack_start
+svc_stack_start:
+	 .space _SVC_STACK_SIZE_
 
 /* ========================================================================
  *                                Functions
@@ -277,6 +277,7 @@ boot_stack_len_SYS:
  * Function to handle reset vector
  */
 	.globl	boot_reset
+	.section ".boot", "ax"
 
 boot_reset:
     //Disable IRQ and FIQ before starting anything
@@ -334,6 +335,40 @@ boot_reset:
     MOV R12, #0
 
     B entry_main
+
+		
+/* ========================================================================
+ *								  Globals
+ * ======================================================================== */
+boot_stack_base_UNUSED:
+	.word und_stack_start
+
+boot_stack_len_UNUSED:
+	.word _UND_STACK_SIZE_
+
+boot_stack_base_IRQ:
+	.word irq_stack_start
+
+boot_stack_len_IRQ:
+	.word _IRQ_STACK_SIZE_
+
+boot_stack_base_SVC:
+	.word svc_stack_start
+
+boot_stack_len_SVC:
+	 .word _SVC_STACK_SIZE_
+
+boot_stack_base_FIQ:
+	 .word fiq_stack_start
+
+boot_stack_len_FIQ:
+	.word _FIQ_STACK_SIZE_
+
+boot_stack_base_SYS:
+	 .word sys_stack_start
+
+boot_stack_len_SYS:
+	 .word _SYS_STACK_SIZE_  
 
 /*FUNCTION:     _sysboot_copy_data_to_ram*/
 /*DESCRIPTION:  copy main stack code from FLASH/ROM to SRAM*/

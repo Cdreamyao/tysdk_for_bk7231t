@@ -7,19 +7,7 @@
 #include "hal/soc/soc.h"
 #endif
 
-#if CFG_RELEASE_FIRMWARE
-#define os_printf                       os_null_printf
-#else
-#if CFG_BACKGROUND_PRINT
-#define os_printf                       os_null_printf
-#else
-#ifdef KEIL_SIMULATOR
-#define os_printf                       os_null_printf
-#else
-#define os_printf                       os_null_printf
-#endif // KEIL_SIMULATOR
-#endif // CFG_BACKGROUND_PRINT
-#endif // CFG_RELEASE_FIRMWARE
+#define os_printf                      os_null_printf
 
 #define warning_prf                    bk_printf
 #define fatal_prf                      bk_printf

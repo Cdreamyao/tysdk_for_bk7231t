@@ -43,7 +43,7 @@ static STA_PS_INFO bk_ps_info =
 #if (CFG_SOC_NAME == SOC_BK7231)
 static UINT16 r_wakeup_time = 50;
 #else
-static UINT16 r_wakeup_time = 50;
+static UINT16 r_wakeup_time = 66;
 #endif
 
 #if PS_DTIM_WITH_NORMAL
@@ -335,21 +335,9 @@ void power_save_mac_idle_callback(void)
     {
         if(bk_ps_info.liston_mode == PS_LISTEN_MODE_DTIM)
         {
-            if(bk_ps_info.ps_arm_wakeup_way == PS_ARM_WAKEUP_USER
-                    && bk_ps_info.waited_beacon == STA_GET_FALSE)
             {
                 power_save_wkup_time_cal(1);
                 nxmac_listen_interval_setf(1);
-            }
-            else if(bk_ps_info.ps_dtim_count == 0)
-            {
-                power_save_wkup_time_cal(bk_ps_info.ps_dtim_period * bk_ps_info.ps_dtim_multi);
-                nxmac_listen_interval_setf(bk_ps_info.ps_dtim_period * bk_ps_info.ps_dtim_multi);
-            }
-            else
-            {
-                power_save_wkup_time_cal(bk_ps_info.ps_dtim_period * (bk_ps_info.ps_dtim_multi - 1) + bk_ps_info.ps_dtim_count);
-                nxmac_listen_interval_setf(bk_ps_info.ps_dtim_period * (bk_ps_info.ps_dtim_multi - 1) + bk_ps_info.ps_dtim_count);
             }
         }
         else
@@ -1054,16 +1042,7 @@ void power_save_cal_bcn_liston_int(UINT16 bcn_int)
     if(bcn_int != 0 )
     {
         bk_ps_info.ps_beacon_int = bcn_int;
-#if PS_WAKEUP_MOTHOD_RW
-
-        if(bk_ps_info.ps_beacon_int >= bk_ps_info.sleep_ms)
-            bk_ps_info.liston_int = 1;
-        else if(bk_ps_info.sleep_ms % bk_ps_info.ps_beacon_int == 0)
-            bk_ps_info.liston_int = bk_ps_info.sleep_ms / bk_ps_info.ps_beacon_int;
-        else
-            bk_ps_info.liston_int = bk_ps_info.sleep_ms / bk_ps_info.ps_beacon_int + 1;
-
-#endif
+        bk_ps_info.liston_int = 100;
     }
 }
 

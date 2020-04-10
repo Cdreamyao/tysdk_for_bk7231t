@@ -48,20 +48,24 @@ OPERATE_RET tuya_gpio_inout_set(IN CONST TY_GPIO_PORT_E port,IN CONST BOOL_T in)
 *  Output: none
 *  Return: OPERATE_RET
 ***********************************************************/
-OPERATE_RET tuya_gpio_inout_set_select(IN CONST TY_GPIO_PORT_E port,IN CONST BOOL_T in, IN CONST BOOL_T high)
+OPERATE_RET tuya_gpio_inout_set_select(IN CONST TY_GPIO_PORT_E port,IN CONST BOOL_T in,IN CONST BOOL_T high)
 {
-
     if(TRUE == in) {
-        if(FALSE == high) {
+        if(TRUE == high){
             BkGpioInitialize(port,INPUT_PULL_DOWN);
-        }else {
+        }else{
             BkGpioInitialize(port,INPUT_PULL_UP);
         }
     }else {
         BkGpioInitialize(port,OUTPUT_NORMAL);
+        if(TRUE == high){
+            BkGpioOutputLow(port);
+        }else{
+            BkGpioOutputHigh(port);
+        }
     }
-    return OPRT_OK;
 }
+
 
 /***********************************************************
 *  Function: tuya_gpio_inout_set
@@ -95,9 +99,5 @@ OPERATE_RET tuya_gpio_write(IN CONST TY_GPIO_PORT_E port,IN CONST BOOL_T high)
     }
     return OPRT_OK;
 }
-
-
-
-
 
 

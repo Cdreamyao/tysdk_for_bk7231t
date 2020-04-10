@@ -2,10 +2,17 @@
 *.d
 *.map
 *.nmap
+#project/tuya_iot/lib
 project/tuya_user/*/output
 *.asm
 *.axf
 ./Debug
 .ver
 tools/generate/config.json
+tools/generate/*.cpr
+tools/generate/*.out
+tools/generate/*.bin
+!tools/generate/bootloader.bin
+!tools/generate/bootloader_enc.bin
+!tools/generate/package.bin
 qt_proj/

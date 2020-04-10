@@ -235,9 +235,9 @@ STATIC VOID __get_wf_status(IN CONST GW_WIFI_NW_STAT_E stat)
 *  Return: none
 *  Note: For production testing
 ***********************************************************/
-BOOL_T gpio_test(VOID)
+BOOL_T gpio_test(IN CONST CHAR_T *in, OUT CHAR_T *out)
 {
-    return TRUE;
+    return gpio_test_all(in, out);
 }
 
 

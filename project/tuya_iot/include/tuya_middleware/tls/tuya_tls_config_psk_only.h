@@ -3158,6 +3158,10 @@
  * independently of the outgoing I/O buffer.
  */
 //#define MBEDTLS_SSL_IN_CONTENT_LEN              16384
+#if defined(TUYA_TLS_DYNAMIC_MEMORY_ALLOCATION)
+	#define MBEDTLS_SSL_IN_CONTENT_LEN (ssl->in_content_len)
+	#define MBEDTLS_SSL_OUT_CONTENT_LEN (ssl->out_content_len)
+#endif
 
 /** \def MBEDTLS_SSL_OUT_CONTENT_LEN
  *

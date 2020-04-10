@@ -27,6 +27,7 @@ extern "C" {
 
 #define GW_ID_LEN               25      // max string length of GW_ID
 #define DEV_ID_LEN              25      // max string length of DEV_ID
+#define TRACE_ID_LEN            32      // max string length of clientTraceId
 #define SCHEMA_ID_LEN           16      // max string length of SCHEMA
 #define BIND_TOKEN_LEN          16      // max string length of BIND_TOKEN
 #define TOKEN_LEN               8       // max string length of TOKEN
@@ -301,6 +302,7 @@ typedef struct {
 /* tuya sdk ota firmware info */
 typedef struct {
     DEV_TYPE_T tp;      // firmware type
+    CHAR_T trace_id[TRACE_ID_LEN+1];           //本次触发OTA，app发送的traci_id
     CHAR_T fw_url[FW_URL_LEN+1];  // firmware download url
     CHAR_T sw_ver[SW_VER_LEN+1];  // firmware version
     UINT_T file_size;             // firmware size in BYTE

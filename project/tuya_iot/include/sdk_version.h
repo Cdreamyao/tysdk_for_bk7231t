@@ -1,7 +1,7 @@
 /***********************************************************
-*  File: sdk_version.h 
-*  Author: 
-*  Date: 
+*  File: sdk_version.h
+*  Author:
+*  Date:
 ***********************************************************/
 #ifndef _SDK_VERSION_H
 #define _SDK_VERSION_H
@@ -14,10 +14,14 @@ extern "C" {
 
 /*
 IOT_BV(BS_VER) 30.00 < - > IOT_SDK 4.1.0
-IOT_BV(BS_VER) 30.01 < - > IOT_SDK 4.1.1 < - > RTL8170 2.0.0
+IOT_BV(BS_VER) 30.01 < - > IOT_SDK 4.1.1
+IOT_BV(BS_VER) 30.02 < - > IOT_SDK 4.1.2
+IOT_BV(BS_VER) 30.03 < - > IOT_SDK 4.1.3
+IOT_BV(BS_VER) 30.04 < - > IOT_SDK 4.1.4
+
 */
 
-#define BS_VER "30.03"
+#define BS_VER "30.05"
 #define PT_VER "2.2"
 #if defined(ENABLE_LAN_ENCRYPTION) && (ENABLE_LAN_ENCRYPTION==1)
 #define LAN_PRO_VER "3.3"   //必须3.3版本及以上才支持局域网加密功能

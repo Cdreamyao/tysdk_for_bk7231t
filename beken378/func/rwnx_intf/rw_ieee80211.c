@@ -286,7 +286,7 @@ UINT8 rw_ieee80211_init_scan_chan(struct scanu_start_req *req)
 
 UINT8 rw_ieee80211_is_scan_rst_in_countrycode(UINT8 freq)
 {
-    UINT32 i, start_chan, end_chan;
+    UINT32 start_chan, end_chan;
 
     ASSERT(g_country_code.init);
 
@@ -304,5 +304,13 @@ UINT8 rw_ieee80211_is_scan_rst_in_countrycode(UINT8 freq)
 
     return 1;
 }
+
+#if CFG_IEEE80211N
+void rw_ieee80211_set_ht_cap(UINT8 ht_supp)
+{
+	g_wiphy.bands[IEEE80211_BAND_2GHZ].ht_cap.ht_supported = ht_supp;
+	rw_msg_send_me_config_req();
+}
+#endif
 
 // eof

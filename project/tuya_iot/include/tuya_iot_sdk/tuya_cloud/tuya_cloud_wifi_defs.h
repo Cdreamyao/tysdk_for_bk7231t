@@ -18,7 +18,8 @@ typedef BYTE_T GW_WF_CFG_MTHD_SEL;  // wifi config method select
 #define GWCM_LOW_POWER          1   // with low power mode
 #define GWCM_SPCL_MODE          2   // special with low power mode
 #define GWCM_OLD_PROD           3   // GWCM_OLD mode with product
-
+#define GWCM_LOW_POWER_AUTOCFG  4   // with low power mode && auto cfg
+#define GWCM_SPCL_AUTOCFG       5   // special with low power mode && auto cfg
 
 
 

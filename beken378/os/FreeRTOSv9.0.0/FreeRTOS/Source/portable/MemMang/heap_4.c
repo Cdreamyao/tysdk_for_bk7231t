@@ -101,7 +101,9 @@ task.h is included from an application file. */
 #define heapBITS_PER_BYTE		( ( size_t ) 8 )
 
 /* Allocate the memory for the heap. */
-#if( configAPPLICATION_ALLOCATED_HEAP == 1 )
+#if configDYNAMIC_HEAP_SIZE
+uint8_t *ucHeap;
+#elif( configAPPLICATION_ALLOCATED_HEAP == 1 )
 	/* The application writer has already defined the array used for the RTOS
 	heap - probably so it can be placed in a special segment or address. */
 	extern uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
@@ -407,13 +409,40 @@ void vPortInitialiseBlocks( void )
 }
 /*-----------------------------------------------------------*/
 
+#if configDYNAMIC_HEAP_SIZE
+extern unsigned char _empty_ram;
+
+#define HEAP_START_ADDRESS    (void*)&_empty_ram
+#define HEAP_END_ADDRESS      (void*)(0x00400000 + 256 * 1024)
+
+static void *prvHeapGetHeaderPointer(void)
+{
+	return (void *)HEAP_START_ADDRESS;
+}
+
+static uint32_t prvHeapGetTotalSize(void)
+{
+	ASSERT(HEAP_END_ADDRESS > HEAP_START_ADDRESS);
+	return (HEAP_END_ADDRESS - HEAP_START_ADDRESS);
+}
+#endif
+
 static void prvHeapInit( void )
 {
-BlockLink_t *pxFirstFreeBlock;
-uint8_t *pucAlignedHeap;
-size_t uxAddress;
-size_t xTotalHeapSize = configTOTAL_HEAP_SIZE;
+	BlockLink_t *pxFirstFreeBlock;
+	uint8_t *pucAlignedHeap;
+	size_t uxAddress;
+	size_t xTotalHeapSize;
 
+	#if configDYNAMIC_HEAP_SIZE
+	xTotalHeapSize = prvHeapGetTotalSize();
+	ucHeap = prvHeapGetHeaderPointer();
+	
+	bk_printf("prvHeapInit-start addr:0x%x, size:%d\r\n", ucHeap, xTotalHeapSize);
+	#else
+	xTotalHeapSize = configTOTAL_HEAP_SIZE;
+	#endif
+	
 	/* Ensure the heap starts on a correctly aligned boundary. */
 	uxAddress = ( size_t ) ucHeap;
 

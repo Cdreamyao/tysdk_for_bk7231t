@@ -189,6 +189,7 @@
 #if MBEDTLS_SSL_MAX_CONTENT_LEN > 16384
 #error "Bad configuration - record content too large."
 #endif
+#if !defined(TUYA_TLS_DYNAMIC_MEMORY_ALLOCATION)
 
 #if MBEDTLS_SSL_IN_CONTENT_LEN > MBEDTLS_SSL_MAX_CONTENT_LEN
 #error "Bad configuration - incoming record content should not be larger than MBEDTLS_SSL_MAX_CONTENT_LEN."
@@ -206,6 +207,7 @@
 #error "Bad configuration - outgoing protected record payload too large."
 #endif
 
+#endif
 /* Calculate buffer sizes */
 
 /* Note: Even though the TLS record header is only 5 bytes
@@ -216,17 +218,9 @@
 
 #define MBEDTLS_SSL_IN_BUFFER_LEN  \
     ( ( MBEDTLS_SSL_HEADER_LEN ) + ( MBEDTLS_SSL_IN_PAYLOAD_LEN ) )
-#if defined(TUYA_TLS_DYNAMIC_MEMORY_ALLOCATION)
-#undef MBEDTLS_SSL_IN_BUFFER_LEN
-#define MBEDTLS_SSL_IN_BUFFER_LEN ssl->in_buf_len
-#endif
 
 #define MBEDTLS_SSL_OUT_BUFFER_LEN  \
     ( ( MBEDTLS_SSL_HEADER_LEN ) + ( MBEDTLS_SSL_OUT_PAYLOAD_LEN ) )
-#if defined(TUYA_TLS_DYNAMIC_MEMORY_ALLOCATION)
-#undef MBEDTLS_SSL_OUT_BUFFER_LEN
-#define MBEDTLS_SSL_OUT_BUFFER_LEN ssl->out_buf_len
-#endif
 
 
 #ifdef MBEDTLS_ZLIB_SUPPORT

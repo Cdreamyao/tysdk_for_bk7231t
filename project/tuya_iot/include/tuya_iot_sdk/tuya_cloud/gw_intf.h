@@ -308,6 +308,7 @@ typedef struct {
     FW_UG_S ug;
     CLOUD_DEV_TP_DEF_T tp;        //云端固件类型
     CHAR_T dev_id[DEV_ID_LEN+1]; // if gateway upgrade then dev_id[0] == 0
+    CHAR_T trace_id[TRACE_ID_LEN+1];           //本次触发OTA，app发送的traci_id
 }GW_UG_MAG_S;
 
 typedef BYTE_T TI_UPGRD_STAT_S;
@@ -334,6 +335,8 @@ typedef struct {
     GW_AUTH_INFO_S secu_auth_info;
 #endif
     L0G_SEQ_S *log_seq;
+
+    L0G_SEQ_S *ota_log_seq;
 
     GW_BASE_IF_S gw_base;
     GW_WORK_STAT_MAG_S gw_wsm;
@@ -365,6 +368,7 @@ typedef struct {
     TM_MSG_S *tmm_gw_if_sync;
     TM_MSG_S *tmm_dev_bind;
     TM_MSG_S *tmm_dev_if_sync;
+    TM_MSG_S *tmm_mf_close;
 #if defined(ENABLE_SIGMESH) && (ENABLE_SIGMESH==1)
     TM_MSG_S *tmm_dev_sigmesh_sync;
 #endif
@@ -439,6 +443,9 @@ typedef enum {
 
 } ENGINEER_STAT_E;              //engineer state
 #endif
+
+typedef VOID (*GW_RESET_FIN_CB)(VOID);
+
 
 /***********************************************************
 *************************variable define********************
@@ -845,6 +852,12 @@ __GW_INTF_EXT \
 OPERATE_RET get_dev_sigmesh_free_node_list(IN CONST INT_T node_num, INOUT TY_SIGMESH_NODE_LIST_S *node_alloc_list);
 
 #endif
+
+__GW_INTF_EXT \
+VOID set_gw_reset_fin_cb(GW_RESET_FIN_CB cb);
+
+__GW_INTF_EXT \
+VOID set_wf_cfg_timeout(UINT_T timeout_s);
 
 #ifdef __cplusplus
 }

@@ -39,6 +39,9 @@
  */
 
 #include "lwip/opt.h"
+#include "wifi_hwl.h"
+#include "tuya_cloud_types.h"
+#include "uni_log.h"
 
 #if LWIP_ARP || LWIP_ETHERNET
 
@@ -103,6 +106,47 @@ ethernet_input(struct pbuf *p, struct netif *netif)
      (unsigned)ethhdr->src.addr[0],  (unsigned)ethhdr->src.addr[1],  (unsigned)ethhdr->src.addr[2],
      (unsigned)ethhdr->src.addr[3],  (unsigned)ethhdr->src.addr[4],  (unsigned)ethhdr->src.addr[5],
      lwip_htons(ethhdr->type)));
+
+    /*signed char mac_test[6] = {0};
+    unsigned char mac_test1[6] = {0x68,0x57,0x2d,0x8e,0x20,0xd6};
+    unsigned char mac_test2[6] = {0x68,0x57,0x2d,0x89,0x63,0x64};
+    unsigned char mac_test3[6] = {0x68,0x57,0x2d,0x8E,0x21,0xF9};
+
+    //extern OPERATE_RET hwl_wf_get_mac(IN CONST WF_IF_E wf,OUT NW_MAC_S *mac);
+    //hwl_wf_get_mac(0, mac_test);
+    //PR_NOTICE("mac address:%"X8_F":%"X8_F":%"X8_F":%"X8_F":%"X8_F":%"X8_F"",\
+      //  mac_test[0],mac_test[1],mac_test[2],mac_test[3],mac_test[4],mac_test[5]);
+    if(((ethhdr->dest.addr[0] == mac_test1[0]) && \
+        (ethhdr->dest.addr[1] == mac_test1[1]) && \
+        (ethhdr->dest.addr[2] == mac_test1[2]) && \
+        (ethhdr->dest.addr[3] == mac_test1[3]) && \
+        (ethhdr->dest.addr[4] == mac_test1[4]) && \
+        (ethhdr->dest.addr[5] == mac_test1[5])) ||\
+        ((ethhdr->dest.addr[0] == mac_test2[0]) && \
+        (ethhdr->dest.addr[1] == mac_test2[1]) && \
+        (ethhdr->dest.addr[2] == mac_test2[2]) && \
+        (ethhdr->dest.addr[3] == mac_test2[3]) && \
+        (ethhdr->dest.addr[4] == mac_test2[4]) && \
+        (ethhdr->dest.addr[5] == mac_test2[5]))||\
+        ((ethhdr->dest.addr[0] == mac_test3[0]) && \
+        (ethhdr->dest.addr[1] == mac_test3[1]) && \
+        (ethhdr->dest.addr[2] == mac_test3[2]) && \
+        (ethhdr->dest.addr[3] == mac_test3[3]) && \
+        (ethhdr->dest.addr[4] == mac_test3[4]) && \
+        (ethhdr->dest.addr[5] == mac_test3[5]))){
+
+    //log (length ,src_mac dst_mac)
+     //os_printf("\r\n");
+     PR_NOTICE("ethernet_input: dest:%"X8_F":%"X8_F":%"X8_F":%"X8_F":%"X8_F":%"X8_F", src:%"X8_F":%"X8_F":%"X8_F":%"X8_F":%"X8_F":%"X8_F"\n",
+     (unsigned)ethhdr->dest.addr[0], (unsigned)ethhdr->dest.addr[1], (unsigned)ethhdr->dest.addr[2],
+     (unsigned)ethhdr->dest.addr[3], (unsigned)ethhdr->dest.addr[4], (unsigned)ethhdr->dest.addr[5],
+     (unsigned)ethhdr->src.addr[0],  (unsigned)ethhdr->src.addr[1],  (unsigned)ethhdr->src.addr[2],
+     (unsigned)ethhdr->src.addr[3],  (unsigned)ethhdr->src.addr[4],  (unsigned)ethhdr->src.addr[5]);
+     //os_printf("\r\n");
+    }
+*/
+
+     
 
   type = ethhdr->type;
 #if ETHARP_SUPPORT_VLAN

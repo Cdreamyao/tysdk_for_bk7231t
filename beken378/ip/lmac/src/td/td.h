@@ -91,6 +91,10 @@ struct td_env_tag
     uint8_t vif_index;
     // Bit field indicating traffic status - see enum td_status_bit
     uint8_t status;
+
+    // Bit field indicating traffic old status
+    uint8_t old_status;
+    
     // Indicate if the Traffic Detection is activated for a VIF (<=> td_timer running)
     bool is_on;
 

@@ -26,9 +26,9 @@ OPERATE_RET httpc_common_post(IN CONST CHAR_T *api_name, IN CONST CHAR_T *api_ve
 OPERATE_RET http_gw_get_timer_cnt(IN CONST INT_T lastFetchTime, OUT ty_cJSON **result);
 OPERATE_RET http_gw_get_timer_content(IN CONST INT_T offset, IN CONST INT_T limit, OUT ty_cJSON **result);
 
-OPERATE_RET http_dev_chk_upgd_info(IN CONST CHAR_T *dev_id,IN CONST CLOUD_DEV_TP_DEF_T tp,OUT ty_cJSON **result);
+OPERATE_RET http_dev_chk_upgd_info(IN CONST CHAR_T *dev_id,IN CONST CLOUD_DEV_TP_DEF_T tp,IN CONST CHAR_T *trace_id,OUT ty_cJSON **result);
 
-OPERATE_RET http_dev_update_upgd_stat_v41(IN CONST CHAR_T *dev_id,IN CONST CLOUD_DEV_TP_DEF_T tp,IN CONST BYTE_T status);
+OPERATE_RET http_dev_update_upgd_stat_v41(IN CONST CHAR_T *dev_id,IN CONST CLOUD_DEV_TP_DEF_T tp,IN CONST CHAR_T *trace_id,IN CONST BYTE_T status);
 
 OPERATE_RET http_device_bind(IN CONST CHAR_T *dev_id, IN CONST CHAR_T *product_key, IN CONST CHAR_T *firmware_key,\
                                  IN CONST CHAR_T *sw_ver, IN CONST BOOL_T online, IN CONST CLOUD_DEV_TP_DEF_T type, \
@@ -42,9 +42,9 @@ OPERATE_RET http_device_reset_v10(IN CONST CHAR_T *dev_id);
 OPERATE_RET http_device_update_versions_v41(IN CONST CHAR_T *dev_id, IN CONST CHAR_T *ver, IN CONST CLOUD_DEV_TP_DEF_T tp, \
                                             IN CONST GW_ATTACH_ATTR_T *attr, IN CONST UINT_T attr_num);
 
-OPERATE_RET http_gw_chk_upgd_info(IN CONST CLOUD_DEV_TP_DEF_T tp,OUT ty_cJSON **result);
+OPERATE_RET http_gw_chk_upgd_info(IN CONST CLOUD_DEV_TP_DEF_T tp,IN CONST CHAR_T *trace_id,OUT ty_cJSON **result);
 
-OPERATE_RET http_gw_update_upgrade_status_v41(IN CONST CLOUD_DEV_TP_DEF_T tp,IN CONST BYTE_T status);
+OPERATE_RET http_gw_update_upgrade_status_v41(IN CONST CLOUD_DEV_TP_DEF_T tp,IN CONST CHAR_T *trace_id,IN CONST BYTE_T status);
 
 OPERATE_RET http_gw_reset(VOID);
 //OPERATE_RET http_gw_check_exist(VOID);

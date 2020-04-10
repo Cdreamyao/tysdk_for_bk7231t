@@ -62,7 +62,7 @@ after_mf_test_cb pre_app_cb = NULL;
 extern VOID app_init(VOID);
 extern VOID pre_device_init(VOID);
 extern OPERATE_RET device_init(VOID);
-extern BOOL_T gpio_test(VOID);
+extern BOOL_T gpio_test(IN CONST CHAR_T *in, OUT CHAR_T *out);
 extern VOID mf_user_callback(VOID);
 extern void extended_app_waiting_for_launch(void);
 extern TY_GPIO_PORT_E swith_ctl_port;
@@ -96,15 +96,28 @@ STATIC UINT_T __tuya_mf_recv(OUT BYTE_T *buf,IN CONST UINT_T len)
 extern OPERATE_RET gw_cfg_flash_reset_fac(VOID);
 STATIC BOOL_T scan_test_ssid(VOID)
 {
+    BOOL_T mf_close;
+    mf_close = wd_mf_test_close_if_read();
+    if (TRUE == mf_close) {
+        PR_NOTICE("have actived over 15 min, not enter mf_init");
+        return OPRT_OK;
+    }
     OPERATE_RET op_ret = OPRT_OK;
-    GW_WORK_STAT_MAG_S read_gw_wsm = {0};
+    GW_WORK_STAT_MAG_S read_gw_wsm ;
+    
+    memset(&read_gw_wsm, 0, sizeof(GW_WORK_STAT_MAG_S));
     op_ret = wd_gw_wsm_read(&read_gw_wsm);
+
     if(gwcm_mode == GWCM_OLD_PROD ) {
         if(read_gw_wsm.nc_tp >= GWNS_TY_SMARTCFG) {
             return false;
         }
-    } else if (gwcm_mode == GWCM_SPCL_MODE || gwcm_mode == GWCM_LOW_POWER){
+    } else if (gwcm_mode == GWCM_SPCL_MODE || gwcm_mode == GWCM_LOW_POWER || gwcm_mode == GWCM_LOW_POWER_AUTOCFG){
         if(read_gw_wsm.nc_tp >= GWNS_UNCFG_SMC) {
+            return false;
+        }
+    } else if(gwcm_mode == GWCM_SPCL_AUTOCFG) {
+         if(read_gw_wsm.nc_tp >= GWNS_TY_SMARTCFG) {
             return false;
         }
     }
@@ -158,7 +171,7 @@ void app_cfg_set(IN CONST GW_WF_CFG_MTHD_SEL mthd, APP_PROD_CB callback)
 void user_main(void)
 {
     OPERATE_RET op_ret = OPRT_OK;
-
+    
     TY_INIT_PARAMS_S init_param = {0};
     init_param.init_db = FALSE;
     strcpy(init_param.sys_env, "BK7231S_2M");
@@ -190,10 +203,17 @@ void user_main(void)
         gpio_test,
         mf_user_callback
     };
-    op_ret = mf_init(&intf,APP_BIN_NAME,USER_SW_VER,TRUE);
-    if(OPRT_OK != op_ret) {
-        PR_ERR("mf_init err:%d",op_ret);
-        return;
+    
+    BOOL_T mf_close = FALSE;
+    mf_close = wd_mf_test_close_if_read();                                  //无法进入产测，请手工注释此行
+    if(TRUE != mf_close) {
+        op_ret = mf_init(&intf,APP_BIN_NAME,USER_SW_VER,TRUE);
+        if(OPRT_OK != op_ret) {
+            PR_ERR("mf_init err:%d",op_ret);
+            return;
+        }
+    } else {
+        PR_NOTICE("have actived over 15 min, not enter mf_init");
     }
     __tuya_mf_uart_free();
     PR_NOTICE("mf_init succ"); 
@@ -318,7 +338,9 @@ OPERATE_RET __mf_gw_upgrade_notify_cb(VOID)
     
     if(flash_checksum != ug_proc->file_header.bin_sum) {
         PR_ERR("verify_ota_checksum err  checksum(0x%x)  file_header.bin_sum(0x%x)",flash_checksum,ug_proc->file_header.bin_sum);
-    	//uni_flash_erase(ug_proc->start_addr,ug_proc->file_header.bin_len);
+        uni_flash_set_protect(FALSE);
+        uni_flash_erase(UG_START_ADDR,0x1000);            //擦除OTA区的首地址4K
+        uni_flash_set_protect(TRUE);
     	Free(pTempbuf);
     	Free(ug_proc);
         return OPRT_COM_ERROR;
@@ -355,7 +377,11 @@ STATIC VOID __gw_upgrade_notify_cb(IN CONST FW_UG_S *fw, IN CONST INT_T download
         }
         if(flash_checksum != ug_proc->file_header.bin_sum){
             PR_ERR("verify_ota_checksum err  checksum(0x%x)  file_header.bin_sum(0x%x)",flash_checksum,ug_proc->file_header.bin_sum);
-        	//uni_flash_erase(ug_proc->start_addr,ug_proc->file_header.bin_len);
+        	
+            uni_flash_set_protect(FALSE);
+        	uni_flash_erase(UG_START_ADDR,0x1000);            //擦除OTA区的首地址4K
+            uni_flash_set_protect(TRUE);
+            
         	Free(pTempbuf);
             return;
         }
@@ -366,6 +392,9 @@ STATIC VOID __gw_upgrade_notify_cb(IN CONST FW_UG_S *fw, IN CONST INT_T download
         SystemReset();
         return;
     }else {
+        uni_flash_set_protect(FALSE);
+        uni_flash_erase(UG_START_ADDR,0x1000);            //擦除OTA区的首地址4K
+        uni_flash_set_protect(TRUE);
         Free(ug_proc);
         PR_ERR("the gateway upgrade failed");
     }
@@ -403,14 +432,13 @@ STATIC OPERATE_RET __gw_upgrage_process_cb(IN CONST FW_UG_S *fw, IN CONST UINT_T
             if((ug_proc->file_header.header_flag !=  UG_PKG_HEAD) || (ug_proc->file_header.tail_flag !=  UG_PKG_TAIL) || (ug_proc->file_header.head_sum != sum_tmp )) {
                 memset(&ug_proc->file_header, 0, SIZEOF(UPDATE_FILE_HDR_S));
                 PR_ERR("bin_file data header err: header_flag(0x%x) tail_flag(0x%x) bin_sum(0x%x) get_sum(0x%x)",ug_proc->file_header.header_flag,ug_proc->file_header.tail_flag,ug_proc->file_header.head_sum,sum_tmp);
-                return OPRT_COM_ERROR;
+                return OPRT_OTA_BIN_CHECK_ERROR;
             }
-            
             if(ug_proc->file_header.bin_len >= (664 * 1024)) {
                 //ug文件最大为664K
                 memset(&ug_proc->file_header, 0, SIZEOF(UPDATE_FILE_HDR_S));
                 PR_ERR("bin_file too large.... %d", ug_proc->file_header.bin_len);
-                return OPRT_COM_ERROR;
+                return OPRT_OTA_BIN_SIZE_ERROR;
             }
             
             os_printf("sw_ver:%s\r\n",ug_proc->file_header.sw_version);
@@ -427,7 +455,7 @@ STATIC OPERATE_RET __gw_upgrage_process_cb(IN CONST FW_UG_S *fw, IN CONST UINT_T
         break;
         
         case UGS_RECV_IMG_DATA: {    //dont have set lock for flash! 
-            PR_DEBUG_RAW("ug_proc->recv_data_cnt : %d,len : %d\r\n",ug_proc->recv_data_cnt,len);
+            PR_DEBUG("ug_proc->recv_data_cnt : %d,len : %d",ug_proc->recv_data_cnt,len);
             *remain_len = len;
             if((len < RT_IMG_WR_UNIT) && (ug_proc->recv_data_cnt <= (ug_proc->file_header.bin_len - RT_IMG_WR_UNIT))) {
                 break;

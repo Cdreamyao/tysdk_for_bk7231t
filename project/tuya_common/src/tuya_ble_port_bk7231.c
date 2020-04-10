@@ -76,17 +76,18 @@ void ble_update_parma(void)
 	param.latency = 0;
 	param.time_out = 200;
 	
-    os_printf("STACK appm_update_param\r\n");
+    bk_printf("STACK appm_update_param\r\n");
 	appm_update_param(&param);
 }
 
+unsigned char ble_att_flag = 0;
 void ble_event_callback(ble_event_t event, void *param)
 {
     switch(event)
     {
         case BLE_STACK_OK:
         {
-            os_printf("STACK INIT OK\r\n");
+            bk_printf("STACK INIT OK\r\n");
             struct bk_ble_db_cfg ble_db_cfg;
             ble_db_cfg.att_db = btl_att_db;
             ble_db_cfg.att_db_nb = 6;
@@ -99,11 +100,11 @@ void ble_event_callback(ble_event_t event, void *param)
         }
         break;
         case BLE_STACK_FAIL:
-            os_printf("STACK INIT FAIL\r\n");
+            bk_printf("STACK INIT FAIL\r\n");
         break;
 
         case BLE_CONNECT:
-            os_printf("BLE CONNECT\r\n");
+            bk_printf("BLE CONNECT\r\n");
 
 			ble_update_parma();
 		
@@ -114,57 +115,83 @@ void ble_event_callback(ble_event_t event, void *param)
 
         case BLE_DISCONNECT:
         {
-            os_printf("BLE DISCONNECT\r\n");
+            bk_printf("BLE DISCONNECT\r\n");
+			ble_att_flag = 0;
             mcu_prevent_clear(MCU_PS_BLE_FROBID);
             if(ty_bt_msg_cb!=NULL)
                 ty_bt_msg_cb(0, TY_BT_EVENT_DISCONNECTED ,NULL);
+
+#if 1
+            //该代码为了解决蓝牙配网的临时解决方案。
+            typedef BYTE_T GW_WF_NWC_STAT_T;
+#define GWNS_LOWPOWER           0   // current in low power mode
+#define GWNS_UNCFG_SMC          1   // current in smart-cfg mode
+#define GWNS_UNCFG_AP           2   // current in ap-cfg mode
+#define GWNS_TY_SMARTCFG        3   // already get ssid && passwd from smart-cfg mode
+#define GWNS_TY_AP              4   // already get ssid && passwd from ap-cfg mode
+#define GWNS_WECHAT_AK          5   // already get ssid && passwd from wechat mode
+#define GWNS_OTHER_CFG          6   // already get ssid && passwd from other mode.for example:uart、bluetooth、qrcode and so on
+#define GWNS_NO_NEED_CFG        7   // no need config wifi
+
+
+            GW_WF_NWC_STAT_T nc_tp;
+            OPERATE_RET  ret = gw_get_nctp_stat(&nc_tp);
+            if(OPRT_OK == ret) {
+                if(nc_tp == GWNS_UNCFG_SMC || nc_tp == GWNS_UNCFG_AP) {
+                    bk_printf("****************tuya_bt_start_adv****************");
+                    tuya_bt_start_adv();
+                }
+            }
+#endif
+
         }
         break;
 
         case BLE_MTU_CHANGE:
-            os_printf("BLE_MTU_CHANGE:%d\r\n", *(uint16_t *)param);
+            bk_printf("BLE_MTU_CHANGE:%d\r\n", *(uint16_t *)param);
         break;
         case BLE_CFG_NOTIFY:
-            os_printf("BLE_CFG_NOTIFY:%d\r\n", *(uint16_t *)param);
+            bk_printf("BLE_CFG_NOTIFY:%d\r\n", *(uint16_t *)param);
         break;
         case BLE_CFG_INDICATE:
-            os_printf("BLE_CFG_INDICATE:%d\r\n", *(uint16_t *)param);
+            bk_printf("BLE_CFG_INDICATE:%d\r\n", *(uint16_t *)param);
         break;
         case BLE_TX_DONE:
-            os_printf("BLE_TX_DONE\r\n");
+            bk_printf("BLE_TX_DONE\r\n");
+			ble_att_flag = 0;
         break;
         case BLE_GEN_DH_KEY:
         {
-            os_printf("BLE_GEN_DH_KEY\r\n");
-            os_printf("key_len:%d\r\n", ((struct ble_gen_dh_key_ind *)param)->len);
+            bk_printf("BLE_GEN_DH_KEY\r\n");
+            bk_printf("key_len:%d\r\n", ((struct ble_gen_dh_key_ind *)param)->len);
             for(int i = 0; i < ((struct ble_gen_dh_key_ind *)param)->len; i++)
             {
-                os_printf("%02x ", ((struct ble_gen_dh_key_ind *)param)->result[i]);
+                bk_printf("%02x ", ((struct ble_gen_dh_key_ind *)param)->result[i]);
             }
-            os_printf("\r\n");
+            bk_printf("\r\n");
         }    
         break;
         case BLE_GET_KEY:
         {
-            os_printf("BLE_GET_KEY\r\n");
-            os_printf("pri_len:%d\r\n", ((struct ble_get_key_ind *)param)->pri_len);
+            bk_printf("BLE_GET_KEY\r\n");
+            bk_printf("pri_len:%d\r\n", ((struct ble_get_key_ind *)param)->pri_len);
             for(int i = 0; i < ((struct ble_get_key_ind *)param)->pri_len; i++)
             {
-                os_printf("%02x ", ((struct ble_get_key_ind *)param)->pri_key[i]);
+                bk_printf("%02x ", ((struct ble_get_key_ind *)param)->pri_key[i]);
             }
-            os_printf("\r\n");
+            bk_printf("\r\n");
         }    
         break;
         case BLE_CREATE_DB_OK:
         {
-            os_printf("CREATE DB SUCCESS\r\n");
+            bk_printf("CREATE DB SUCCESS\r\n");
             ble_stack_init_ok = 1;
             if(ty_bt_msg_cb!=NULL)
                 ty_bt_msg_cb(0, TY_BT_EVENT_ADV_READY ,NULL);
         }
         break;
         default:
-            os_printf("UNKNOW EVENT\r\n");
+            bk_printf("UNKNOW EVENT\r\n");
         break;
     }
 }
@@ -263,6 +290,11 @@ OPERATE_RET tuya_bt_send(BYTE_T *data, UINT8_T len)
 {
 #if BLE_OPEN
     bk_printf("!!!!!!!!!!tuya_bt_send\r\n");
+	while(ble_att_flag == 1){
+		rtos_delay_milliseconds(1);
+	}
+	ble_att_flag = 1;
+
     bk_ble_send_ntf_value(len, data, 0, 4);
 #endif
     return OPRT_OK;

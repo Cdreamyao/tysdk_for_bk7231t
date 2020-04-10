@@ -340,7 +340,8 @@ UINT32 rw_ieee80211_set_country(const wifi_country_t *country);
 UINT32 rw_ieee80211_get_country(wifi_country_t *country);
 UINT8 rw_ieee80211_init_scan_chan(struct scanu_start_req *req);
 UINT8 rw_ieee80211_is_scan_rst_in_countrycode(UINT8 freq);
-
+#if CFG_IEEE80211N
+void rw_ieee80211_set_ht_cap(UINT8 ht_supp);
+#endif
 #endif //_RW_PUB_H_
 // eof
-
