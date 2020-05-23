@@ -61,6 +61,16 @@ VOID mf_user_callback(VOID)
     return;
 }
 
+VOID prod_test(BOOL_T flag, CHAR_T rssi)
+{
+    if(flag == FALSE) {
+        PR_ERR("no auth");
+        return;
+    }
+    
+    PR_NOTICE("product test mode");
+}
+
 /***********************************************************
 *  Function: app_init
 *  Input: none
@@ -68,8 +78,9 @@ VOID mf_user_callback(VOID)
 *  Return: none
 *  Note: called by user_main
 ***********************************************************/
-VOID app_init(VOID) {
-    return ;
+VOID app_init(VOID) 
+{
+    app_cfg_set(GWCM_SPCL_MODE, prod_test);
 }
 
 VOID status_changed_cb(IN CONST GW_STATUS_E status)
@@ -280,7 +291,7 @@ OPERATE_RET device_init(VOID)
     };
     
     //PR_NOTICE("cfg_mode:%d\r\n",cfg_mode);
-    op_ret = tuya_iot_wf_soc_dev_init(GWCM_OLD, WF_START_SMART_FIRST, &wf_cbs,PRODUCT_KEY,DEV_SW_VERSION);
+    op_ret = tuya_iot_wf_soc_dev_init(GWCM_SPCL_MODE, WF_START_SMART_FIRST, &wf_cbs,PRODUCT_KEY,DEV_SW_VERSION);
     if(OPRT_OK != op_ret) {
         PR_ERR("tuya_iot_wf_soc_dev_init err:%d",op_ret);
         return -1;
