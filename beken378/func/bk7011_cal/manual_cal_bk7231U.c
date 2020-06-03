@@ -44,7 +44,7 @@
 #define MAX_RATE_FOR_N                    (135)   // MCS7
 
 #define MOD_DIST_G_BW_N20                 (2)     // bk7231 is 2
-#define MOD_DIST_G_BW_N40                 (2)
+#define MOD_DIST_G_BW_N40                 (3)
 
 #define TXPWR_ELEM_INUSED                 (0)
 #define TXPWR_ELEM_UNUSED                 (1)
@@ -394,7 +394,9 @@ extern unsigned char cal_11b_2_ble_flag;
 
 #define RF_CALI_FLAG_SET0        (0x1)
 #define RF_CALI_FLAG_SET1        (0x2)
+#define RF_CALI_MODE_SET0        (0x4)
 #define RF_CALI_FLAG             (RF_CALI_FLAG_SET0 | RF_CALI_FLAG_SET1)
+#define RF_CALI_MASK             (0x7)
 UINT32 g_rfcali_mode = 0;
 
 void manual_cal_set_setp0(void)
@@ -407,9 +409,15 @@ void manual_cal_set_setp1(void)
     g_rfcali_mode |= RF_CALI_FLAG_SET1;
 }
 
+void manual_cal_set_rfcal_step0(void)
+{
+    g_rfcali_mode &= ~RF_CALI_MASK;
+    g_rfcali_mode |= RF_CALI_MODE_SET0;
+}
+
 void manual_cal_clear_setp(void)
 {
-    g_rfcali_mode &= ~RF_CALI_FLAG;
+    g_rfcali_mode &= ~RF_CALI_MASK;
 }
 
 static UINT32 manual_cal_is_in_rfcali_mode(void)
@@ -418,10 +426,24 @@ static UINT32 manual_cal_is_in_rfcali_mode(void)
     return ((g_rfcali_mode & RF_CALI_FLAG) == RF_CALI_FLAG) ? 1 : 0;
 }
 
-static UINT32 manual_cal_is_in_rftest_mode(void)
+UINT32 manual_cal_is_in_rftest_mode(void)
 {
-    // only include rf test
-    return ((g_rfcali_mode & RF_CALI_FLAG) == RF_CALI_FLAG_SET1) ? 1 : 0;
+    if(g_rfcali_mode == 0)
+    {
+        // no thing happened, do "txevm" to send pkt, use vitual 
+        return 1;
+    }
+    else if((g_rfcali_mode & RF_CALI_MASK) == RF_CALI_MASK)
+    {
+        // rfcali mode after save cali result, do test 
+        return 1;
+    }
+    else
+    {
+        // rfcali mode, before save result,need use ture value
+        // such as txevm -g 0,  
+        return 0;
+    }
 }
 
 void manual_cal_save_txpwr(UINT32 rate, UINT32 channel, UINT32 pwr_gain)

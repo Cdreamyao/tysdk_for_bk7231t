@@ -746,7 +746,7 @@
  * numbers after booting a device.
  */
 #if !defined LWIP_RANDOMIZE_INITIAL_LOCAL_PORTS || defined __DOXYGEN__
-#define LWIP_RANDOMIZE_INITIAL_LOCAL_PORTS 0
+#define LWIP_RANDOMIZE_INITIAL_LOCAL_PORTS 1
 #endif
 /**
  * @}
@@ -1161,7 +1161,7 @@
  * TCP_SYNMAXRTX: Maximum number of retransmissions of SYN segments.
  */
 #if !defined TCP_SYNMAXRTX || defined __DOXYGEN__
-#define TCP_SYNMAXRTX                   6
+#define TCP_SYNMAXRTX                   8
 #endif
 
 /**

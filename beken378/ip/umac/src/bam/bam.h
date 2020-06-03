@@ -310,8 +310,11 @@ __INLINE uint16_t bam_build_baparamset(struct bam_env_tag *bam_env)
      *******************************************************************
      *
      */
+#if defined(CFG_AMSDU)     
     // Fill the A-MSDU Supported bit
     value |= MAC_BA_PARAMSET_AMSDU_MASK;
+#endif
+
     // Fill the Block Ack Policy bit
     value |= (bam_env->ba_policy << MAC_BA_PARAMSET_POLICY_OFT);
     // Fill the TID bits

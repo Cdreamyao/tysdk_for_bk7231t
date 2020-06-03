@@ -73,7 +73,7 @@
 #if CFG_IEEE80211N
 #define CFG_BWLEN
 #define CFG_RC
-//#define CFG_BARX          0  // 5
+#define CFG_BARX          1  // 5
 //#define CFG_BATX          1  // 5
 //#define CFG_TDLS
 //#define CFG_AMSDU
@@ -507,6 +507,9 @@
                                                         + 256 * NX_REMOTE_STA_MAX \
                                                         + CELL_COUNT * CELL_GRANULARITY \
                                                         + 20 * 1024)
+
+extern int rwnx_get_noht_rssi_thresold(void) __attribute__ ((weak));
+extern INT32 rwnx_printf_fun(const char *fmt, ...) __attribute__ ((weak));
                                                         
 #endif // _RWNX_CONFIG_H_
 // eof

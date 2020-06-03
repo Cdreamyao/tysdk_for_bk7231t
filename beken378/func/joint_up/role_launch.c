@@ -2,14 +2,114 @@
 #include "sys_rtos.h"
 #include "role_launch.h"
 #include "mem_pub.h"
+#include "str_pub.h"
 #include "rtos_pub.h"
 #include "rtos_error.h"
 #include "wlan_ui_pub.h"
+#include "ieee802_11_defs.h"
+
+#if RL_SUPPORT_FAST_CONNECT
+#include "drv_model_pub.h"
+#include "flash_pub.h"
+#include "param_config.h"
+#endif
 
 #if CFG_ROLE_LAUNCH
 RL_T g_role_launch = {0};
 RL_SOCKET_T g_rl_socket = {0};
 RL_SOCKET_CACHE_T g_sta_cache = {0};
+
+extern u8* wpas_get_sta_psk(void);
+
+#if RL_SUPPORT_FAST_CONNECT
+extern void user_connected_callback(FUNCPTR fn);
+#endif
+
+#if RL_SUPPORT_FAST_CONNECT
+#define BSSID_INFO_ADDR 0x1e2000 /*reserve 4k for bssid info*/
+static char g_rl_sta_key[64];
+static void rl_write_bssid_info(void)
+{
+	int i;
+	uint8_t protect_flag, protect_param, temp[4];
+	uint8_t *psk;
+	uint32_t status, addr;
+	RL_BSSID_INFO_T bssid_info;
+	LinkStatusTypeDef link_status;
+	DD_HANDLE flash_hdl;
+	uint32_t ssid_len;
+
+	os_memset(&link_status, 0, sizeof(link_status));
+	bk_wlan_get_link_status(&link_status);
+	os_memset(&bssid_info, 0, sizeof(bssid_info));
+
+	ssid_len = os_strlen(link_status.ssid);
+	if(ssid_len > SSID_MAX_LEN)
+	{
+		ssid_len = SSID_MAX_LEN;
+	}
+	os_strncpy(bssid_info.ssid, link_status.ssid, ssid_len);
+	os_memcpy(bssid_info.bssid, link_status.bssid, 6);
+	bssid_info.security = link_status.security;
+	bssid_info.channel = link_status.channel;
+
+	psk = wpas_get_sta_psk();
+	os_memset(temp, 0, sizeof(temp));
+	for(i = 0; i < 32; i++)
+	{
+		sprintf(temp, "%02x", psk[i]);
+		strcat(bssid_info.psk, temp);
+	}
+	os_strcpy(bssid_info.pwd, g_rl_sta_key);
+
+	flash_hdl = ddev_open(FLASH_DEV_NAME, &status, 0);
+	ddev_control(flash_hdl, CMD_FLASH_GET_PROTECT, &protect_flag);
+	protect_param = FLASH_PROTECT_NONE;
+	ddev_control(flash_hdl, CMD_FLASH_SET_PROTECT, (void *)&protect_param);
+	addr = BSSID_INFO_ADDR;
+	ddev_control(flash_hdl, CMD_FLASH_ERASE_SECTOR, (void *)&addr);
+	ddev_write(flash_hdl, &bssid_info, sizeof(bssid_info), addr);
+	ddev_control(flash_hdl, CMD_FLASH_SET_PROTECT, (void *)&protect_flag);
+	ddev_close(flash_hdl);
+}
+
+static void rl_read_bssid_info(RL_BSSID_INFO_PTR bssid_info)
+{
+	uint32_t status, addr;
+	DD_HANDLE flash_hdl;
+
+	flash_hdl = ddev_open(FLASH_DEV_NAME, &status, 0);
+	addr = BSSID_INFO_ADDR;
+	ddev_read(flash_hdl, (char *)bssid_info, sizeof(RL_BSSID_INFO_T), addr);
+	ddev_close(flash_hdl);
+}
+
+static void rl_sta_fast_connect(RL_BSSID_INFO_PTR bssid_info)
+{
+	network_InitTypeDef_adv_st inNetworkInitParaAdv;
+
+	os_memset(&inNetworkInitParaAdv, 0, sizeof(inNetworkInitParaAdv));
+	
+	os_strcpy((char*)inNetworkInitParaAdv.ap_info.ssid, bssid_info->ssid);
+	os_memcpy(inNetworkInitParaAdv.ap_info.bssid, bssid_info->bssid, 6);
+	inNetworkInitParaAdv.ap_info.security = bssid_info->security;
+	inNetworkInitParaAdv.ap_info.channel = bssid_info->channel;
+	
+	if(bssid_info->security < SECURITY_TYPE_WPA_TKIP)
+	{
+		os_strcpy((char*)inNetworkInitParaAdv.key, bssid_info->pwd);
+		inNetworkInitParaAdv.key_len = os_strlen(bssid_info->pwd);
+	}
+	else
+	{
+	os_strcpy((char*)inNetworkInitParaAdv.key, bssid_info->psk);
+	inNetworkInitParaAdv.key_len = os_strlen(bssid_info->psk);
+	}
+	inNetworkInitParaAdv.dhcp_mode = DHCP_CLIENT;
+
+	bk_wlan_start_sta_adv(&inNetworkInitParaAdv);
+}
+#endif
 
 uint32_t rl_launch_sta(void)
 {
@@ -397,6 +497,10 @@ void rl_init(void)
 									NULL);
 	ASSERT(kNoErr == err); 
     g_role_launch.rl_timer_flag = RL_TIMER_INIT;
+
+#if RL_SUPPORT_FAST_CONNECT
+	user_connected_callback(rl_write_bssid_info);
+#endif
 }
 
 void rl_uninit(void)
@@ -648,6 +752,10 @@ void rl_pre_sta_init(void)
 void rl_sta_request_start(LAUNCH_REQ *req)
 {
     extern void demo_scan_app_init(void);
+#if RL_SUPPORT_FAST_CONNECT
+	RL_BSSID_INFO_T bssid_info;
+	uint32_t ssid_len;
+#endif
 
     ASSERT(req);
     
@@ -655,7 +763,31 @@ void rl_sta_request_start(LAUNCH_REQ *req)
     {
         case LAUNCH_REQ_STA:
             rl_pre_sta_init();
+			#if RL_SUPPORT_FAST_CONNECT
+			os_memset(&g_rl_sta_key, 0, sizeof(g_rl_sta_key));
+			os_strcpy(g_rl_sta_key, req->descr.wifi_key);
+			rl_read_bssid_info(&bssid_info);
+
+			ssid_len = os_strlen(bssid_info.ssid);
+			if(ssid_len > SSID_MAX_LEN)
+			{
+				ssid_len = SSID_MAX_LEN;
+			}
+			if(os_memcmp(req->descr.wifi_ssid, bssid_info.ssid, ssid_len) == 0
+				&& os_strcmp(req->descr.wifi_key, bssid_info.pwd) == 0)
+			{
+				bk_printf("fast_connect\r\n");
+				rl_sta_fast_connect(&bssid_info);
+			}
+			else
+			{
+				bk_printf("normal_connect\r\n");
+				bk_wlan_start_sta(&req->descr);
+			}
+			#else
+			bk_printf("normal_connect\r\n");
             bk_wlan_start_sta(&req->descr);
+			#endif
             break;
             
         case LAUNCH_REQ_PURE_STA_SCAN:

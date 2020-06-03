@@ -120,6 +120,9 @@ UINT_T ty_uart_read_data(IN CONST TY_UART_PORT_E port,OUT BYTE_T *buf,IN CONST U
 __TUYA_UART_EXT \
 VOID ty_set_log_port(LOG_PORT_E port);
 
+__TUYA_UART_EXT \
+UINT_T ty_uart_read_data_size(IN CONST TY_UART_PORT_E port);
+
 #ifdef __cplusplus
 }
 #endif

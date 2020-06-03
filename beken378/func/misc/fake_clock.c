@@ -23,11 +23,14 @@
 void rc_reset_patch(void);
 #endif
 
+static volatile UINT64 current_us = 0;
 static volatile UINT32 current_clock = 0;
 static volatile UINT32 current_seconds = 0;
 static UINT32 second_countdown = FCLK_SECOND;
 
-#define         ONE_CAL_TIME        1000
+extern void mcu_ps_increase_clr(void);
+#define         ONE_CAL_TIME        15000
+
 typedef struct
 {
     UINT32 fclk_tick;
@@ -43,6 +46,11 @@ void fclk_hdl(UINT8 param)
     if(power_save_use_pwm_isr())
     {
         power_save_pwm_isr(param);
+        return;
+    }
+
+    if(!mcu_ps_need_pstick())
+    {
         return;
     }
 #endif
@@ -172,7 +180,6 @@ void fclk_reset_count(void)
 UINT32 timer_cal_init(void)
 {
     UINT32 fclk;
-    UINT32 machw;
 
     fclk = BK_TICKS_TO_MS(fclk_get_tick());
 
@@ -181,58 +188,50 @@ UINT32 timer_cal_init(void)
     return 0;
 }
 
+extern int increase_tick;
 UINT32 timer_cal_tick(void)
 {
     UINT32 fclk, tmp2;
     UINT32 machw;
-    UINT32 lost;
+    INT32 lost;
     GLOBAL_INT_DECLARATION();
 
     GLOBAL_INT_DISABLE();
-    if(use_cal_net == 1)
-    {
-        GLOBAL_INT_RESTORE();
-        return  ;
-    }
     
     fclk = BK_TICKS_TO_MS(fclk_get_tick());
     cal_tick_save.tmp1 += ONE_CAL_TIME;
 
-    if(fclk < cal_tick_save.fclk_tick)
-    {
-        tmp2 = (0xFFFFFFFF - cal_tick_save.fclk_tick) + fclk;
-    }
-    else
-    {
-        tmp2 = fclk - cal_tick_save.fclk_tick;
-    }
+    tmp2 = fclk;
 
-    if(cal_tick_save.tmp1  < (UINT32)tmp2)
-    {
-        lost = 0;
-    }
-    else
-    {
-        lost = cal_tick_save.tmp1  - (UINT32)tmp2;
-    }
+    lost = (INT32)(cal_tick_save.tmp1  - (UINT32)tmp2);
 
-    if((lost < (0xFFFFFFFF >> 1 )) && (lost > 4))
+    if((lost >= (2*FCLK_DURATION_MS)))
     {
         if(lost > 200)
         {
-            os_printf("t cal_:%x %x\r\n", lost, machw);
-            if(lost > 500)
-            {
-                goto CAL_RESET;
-            }
+            //os_printf("m cal_:%x %x\r\n", lost, machw);
         }
 
+        lost -= FCLK_DURATION_MS;
         fclk_update_tick(BK_MS_TO_TICKS(lost));
+        increase_tick = 0;
     }
+    #if 1
     else
     {
+        if(lost <= (-(2*FCLK_DURATION_MS)))
+        {
+            if(lost < (-50000))
+            {
+                os_printf("m reset:%x %x\r\n", lost, machw);
+            }
+            increase_tick = lost + FCLK_DURATION_MS;
+        }
     }
+    #endif
+    //os_printf("tc:%d\r\n",lost);
     
+    mcu_ps_machw_init();
     GLOBAL_INT_RESTORE();
     return 0 ;
 
@@ -270,7 +269,6 @@ void cal_timer_set(void)
 
 void cal_timer_deset(void)
 {
-    timer_param_t param;
     UINT32 ret;
     UINT32 timer_channel;
 
@@ -307,6 +305,8 @@ UINT32 bk_cal_init(UINT32 setting)
         os_printf("cset:%d %d %d %d\r\n",use_cal_net,current_clock,fclk_get_second(),xTaskGetTickCount());
     }
     GLOBAL_INT_RESTORE();
+
+	return 0;
 }
 
 #if (CFG_SOC_NAME == SOC_BK7231)

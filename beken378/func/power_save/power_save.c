@@ -20,6 +20,7 @@
 #include "mcu_ps_pub.h"
 #include "rtos_error.h"
 #include "role_launch.h"
+#include "start_type_pub.h"
 
 volatile static PS_MODE_STATUS    bk_ps_mode = PS_NO_PS_MODE;
 
@@ -898,6 +899,7 @@ int power_save_dtim_disable_handler(void)
         if(power_save_wkup_event_get() & NEED_REBOOT_BIT)
         {
             os_printf("wdt reboot\r\n");
+            bk_misc_update_set_type(RESET_SOURCE_REBOOT);
             sddev_control(WDT_DEV_NAME, WCMD_SET_PERIOD, &wdt_val);
             sddev_control(WDT_DEV_NAME, WCMD_POWER_UP, NULL);
         }

@@ -93,7 +93,7 @@
 #endif
 
 /* Constants required to setup the initial stack. */
-#define portINITIAL_SPSR 			    ( ( StackType_t ) 0x5f ) /* System mode, ARM mode, interrupts enabled. */
+#define portINITIAL_SPSR 			    ( ( StackType_t ) 0x1f ) /* System mode, ARM mode, interrupts enabled. */
 
 #define portINSTRUCTION_SIZE	        ( ( StackType_t ) 4 )
 

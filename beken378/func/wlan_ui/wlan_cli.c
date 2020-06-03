@@ -48,6 +48,8 @@
 #include "utils_httpc.h"
 #endif
 
+#include "start_type_pub.h"
+
 #if CFG_ENABLE_ATE_FEATURE
 
 #ifndef MOC
@@ -1052,6 +1054,8 @@ void reboot(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
     FUNCPTR reboot = 0;
     UINT32 wdt_val = 1;
+
+    bk_misc_update_set_type(RESET_SOURCE_REBOOT);
     
 #if CFG_USE_STA_PS
     GLOBAL_INT_DECLARATION();
@@ -1496,6 +1500,7 @@ void udp_server_test(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **
     demo_start_upd();
 }
 #endif
+
 
 static const struct cli_command built_ins[] =
 {

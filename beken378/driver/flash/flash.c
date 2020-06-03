@@ -5,18 +5,11 @@
 #include "flash.h"
 #include "sys_ctrl.h"
 #include "flash_pub.h"
-
 #include "drv_model_pub.h"
-
 #include <string.h>
 #include "uart_pub.h"
 #include "sys_ctrl_pub.h"
 #include "mcu_ps_pub.h"
-
-
-#define MODE_STD     0
-#define MODE_DUAL    1
-#define MODE_QUAD    2
 
 #ifdef CFG_SUPPORT_ALIOS
 static const flash_config_t flash_config[] =
@@ -86,6 +79,25 @@ static void flash_set_clk(UINT8 clk_conf)
     value = REG_READ(REG_FLASH_CONF);
     value &= ~(FLASH_CLK_CONF_MASK << FLASH_CLK_CONF_POSI);
     value |= (clk_conf << FLASH_CLK_CONF_POSI);
+    REG_WRITE(REG_FLASH_CONF, value);
+}
+
+static void flash_enable_cpu_data_wr(void)
+{
+    UINT32 value;
+
+    value = REG_READ(REG_FLASH_CONF);
+    value |= (CPU_DATA_WR_MASK << CPU_DATA_WR_POSI);
+    REG_WRITE(REG_FLASH_CONF, value);
+}
+
+static void flash_disable_cpu_data_wr(void)
+{
+    UINT32 value;
+
+    value = REG_READ(REG_FLASH_CONF);
+    value &= (~(CPU_DATA_WR_MASK << CPU_DATA_WR_POSI));
+	
     REG_WRITE(REG_FLASH_CONF, value);
 }
 
@@ -546,8 +558,6 @@ static void flash_write_data(UINT8 *buffer, UINT32 address, UINT32 len)
 
 void flash_protection_op(UINT8 mode, PROTECT_TYPE type)
 {
-	//if((mode==0) && (flash_id == FLASH_XTX_16M))
-	//	return;
 	set_flash_protect(type);
 }
 
@@ -556,19 +566,18 @@ void flash_init(void)
     UINT32 id, param;
 
     while(REG_READ(REG_FLASH_OPERATE_SW) & BUSY_SW);
+	
     id = flash_get_id();
     FLASH_PRT("[Flash]id:0x%x\r\n", id);
     flash_get_current_flash_config();
 	
 	set_flash_protect(FLASH_PROTECT_ALL);
-	
+	flash_disable_cpu_data_wr();
     flash_set_line_mode(flash_current_config->line_mode);
       
     flash_set_clk(5);  // 60M
 
     ddev_register_dev(FLASH_DEV_NAME, &flash_op);
-    
-    //os_printf("flash_init end\r\n");
 }
 
 void flash_exit(void)
@@ -620,7 +629,6 @@ UINT32 flash_ctrl(UINT32 cmd, void *parm)
     if(4 == flash_current_config->line_mode)
     {
         flash_set_line_mode(LINE_MODE_TWO);
-        //os_printf("change line mode 2\r\n");
     }
         
     switch(cmd)

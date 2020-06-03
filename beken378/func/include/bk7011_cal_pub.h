@@ -127,6 +127,12 @@ extern void rwnx_cal_ble_recover_rfconfig(void);
 extern void manual_cal_set_setp0(void);
 extern void manual_cal_set_setp1(void);
 extern void manual_cal_clear_setp(void);
+extern void manual_cal_set_rfcal_step0(void);
 extern int manual_cal_rfcali_status(void);
+extern UINT32 manual_cal_check_pwr_idx(UINT32 *level);
+extern UINT32 manual_cal_is_in_rftest_mode(void);
+
+extern void rwnx_cal_en_extra_txpa(void);
+extern void rwnx_cal_dis_extra_txpa(void);
 
 #endif // _BK7011_CAL_PUB_H_

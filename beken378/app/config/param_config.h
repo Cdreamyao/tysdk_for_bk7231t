@@ -55,6 +55,7 @@ typedef struct sta_param
     uint8_t key[65];
     uint8_t key_len;
     uint8_t fast_connect_set;
+	uint8_t retry_cnt;
     fast_connect_param_t fast_connect;
 } sta_param_t;
 

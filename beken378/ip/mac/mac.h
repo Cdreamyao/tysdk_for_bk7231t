@@ -224,7 +224,7 @@ struct mac_ssid
 
 /// MAC RATE-SET
 #define MAC_RATESET_LEN             12
-#define MAC_SUPP_RATES_IE_LEN       8
+#define MAC_SUPP_RATES_IE_LEN       4
 #define MAC_OFDM_PHY_RATESET_LEN    8
 #define MAC_EXT_RATES_OFF      8
 struct mac_rateset

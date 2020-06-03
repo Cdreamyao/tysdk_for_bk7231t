@@ -51,7 +51,7 @@
 /* Disable lwIP asserts */
 #define LWIP_NOASSERT			1
 
-#define LWIP_DEBUG                      0
+#define LWIP_DEBUG                      1
 #define LWIP_DEBUG_TRACE                0
 #define SOCKETS_DEBUG                   LWIP_DBG_OFF // | LWIP_DBG_MASK_LEVEL
 
@@ -134,7 +134,7 @@
  * a lot of data that needs to be copied, this should be set high.
  */
 
-#define MEM_SIZE (64*1024)
+#define MEM_SIZE                       (32*1024)
 
 
 

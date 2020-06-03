@@ -345,3 +345,4 @@ void rw_ieee80211_set_ht_cap(UINT8 ht_supp);
 #endif
 #endif //_RW_PUB_H_
 // eof
+

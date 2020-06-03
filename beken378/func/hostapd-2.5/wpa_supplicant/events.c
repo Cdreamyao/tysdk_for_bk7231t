@@ -1502,7 +1502,12 @@ static int _wpa_supplicant_event_scan_results(struct wpa_supplicant *wpa_s,
 			return -1;
 		if (!own_request)
 			return -1;
-		os_printf("Failed to get scan results - try scanning again\r\n");
+		os_printf("Failed to get scan results - try scanning again, retry cnt = %d.\r\n", g_sta_param_ptr->retry_cnt);
+		if(g_sta_param_ptr->retry_cnt)
+		{
+			g_sta_param_ptr->retry_cnt--;
+			wpa_supplicant_req_new_scan(wpa_s, 1, 0);
+		}
 		ret = -1;
 		goto scan_work_done;
 	}

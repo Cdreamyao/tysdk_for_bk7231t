@@ -20,8 +20,8 @@
 #endif
 
 saradc_desc_t *saradc_desc = NULL;
-
 saradc_calibrate_val saradc_val = {0x55, 0x354};
+static volatile u8 saradc_is_busy = 0;
 
 static DD_OPERATIONS saradc_op = {
             saradc_open,
@@ -127,38 +127,49 @@ static void saradc_gpio_config(void)
 
 static UINT32 saradc_open(UINT32 op_flag)
 {
-	UINT32 value = 0;
+	UINT32 config_value = 0;
+	UINT32 sat_config_value = 0;
+    saradc_desc_t *p_saradc_desc;
 
-    saradc_desc = (saradc_desc_t*)op_flag;
+    p_saradc_desc = (saradc_desc_t*)op_flag;
 
-	if(saradc_desc->pData == NULL){
+	if(p_saradc_desc->pData == NULL){
 		return SARADC_FAILURE;
 	}
 
-	if(saradc_desc->channel > SARADC_ADC_CHNL_MAX){
+	if(p_saradc_desc->channel > SARADC_ADC_CHNL_MAX){
 		return SARADC_FAILURE;
 	}
 
-	if(saradc_desc->data_buff_size == 0){
+	if(p_saradc_desc->data_buff_size == 0){
 		return SARADC_FAILURE;
 	}
+
+    if (saradc_is_busy != 0)
+    {
+        return SARADC_FAILURE;
+    }
+    saradc_is_busy = 1;
 
 	saradc_enable_icu_config();
-    
+
+    saradc_desc = p_saradc_desc;
 	saradc_desc->has_data = 0;
+	saradc_desc->all_done = 0;
     saradc_desc->current_read_data_cnt = 0;
     saradc_desc->current_sample_data_cnt = 0;
 
 	saradc_gpio_config();
 
     // clear fifo
-    while((value & SARADC_ADC_FIFO_EMPTY) == 0) {
+    config_value = REG_READ(SARADC_ADC_CONFIG);
+    while((config_value & SARADC_ADC_FIFO_EMPTY) == 0) {
         REG_READ(SARADC_ADC_DATA);
-        value = REG_READ(SARADC_ADC_CONFIG);
+        config_value = REG_READ(SARADC_ADC_CONFIG);
     }
     saradc_int_clr();
 
-    value = ((saradc_desc->mode & SARADC_ADC_MODE_MASK) << SARADC_ADC_MODE_POSI)
+    config_value = ((saradc_desc->mode & SARADC_ADC_MODE_MASK) << SARADC_ADC_MODE_POSI)
         | SARADC_ADC_CHNL_EN
         | ((saradc_desc->channel & SARADC_ADC_CHNL_MASK) << SARADC_ADC_CHNL_POSI)
         | (((saradc_desc->mode>>2)&0x01) << SARADC_ADC_DELAY_CLK_POSI)
@@ -166,25 +177,36 @@ static UINT32 saradc_open(UINT32 op_flag)
         | ((saradc_desc->pre_div & SARADC_ADC_PRE_DIV_MASK) << SARADC_ADC_PRE_DIV_POSI)
         | ((saradc_desc->samp_rate & SARADC_ADC_SAMPLE_RATE_MASK) << SARADC_ADC_SAMPLE_RATE_POSI)
         | ((saradc_desc->filter & SARADC_ADC_FILTER_MASK)<< SARADC_ADC_FILTER_POSI);
-    REG_WRITE(SARADC_ADC_CONFIG, value);
+    REG_WRITE(SARADC_ADC_CONFIG, config_value);
 
-#if (CFG_SOC_NAME != SOC_BK7231)    
-    value = SARADC_ADC_SAT_ENABLE 
-        | ((0x01 & SARADC_ADC_SAT_CTRL_MASK) << SARADC_ADC_SAT_CTRL_POSI);
-    REG_WRITE(SARADC_ADC_SATURATION_CFG, value);
+#if (CFG_SOC_NAME != SOC_BK7231) 
+    sat_config_value = SARADC_ADC_SAT_ENABLE 
+        | ((0x03 & SARADC_ADC_SAT_CTRL_MASK) << SARADC_ADC_SAT_CTRL_POSI);
+    REG_WRITE(SARADC_ADC_SATURATION_CFG, sat_config_value);
 #endif
-    
+
     saradc_enable_interrupt();
 
 	return SARADC_SUCCESS;
 }
 
+void saradc_disable(void)
+{
+	UINT32 value;
+    value = REG_READ(SARADC_ADC_CONFIG);
+    value &= (~SARADC_ADC_CHNL_EN);
+    REG_WRITE(SARADC_ADC_CONFIG, value) ;
+}
+
 static UINT32 saradc_close(void)
 {
 	UINT32 value;
-    
+
+	GLOBAL_INT_DECLARATION();
+
+	GLOBAL_INT_DISABLE();
     saradc_disable_interrupt();
-#if 1
+
 	value = REG_READ(SARADC_ADC_CONFIG);
     value &= ~(SARADC_ADC_MODE_MASK << SARADC_ADC_MODE_POSI);
     value &= ~(SARADC_ADC_CHNL_EN); 
@@ -192,7 +214,7 @@ static UINT32 saradc_close(void)
 	REG_WRITE(SARADC_ADC_CONFIG, value);
 
     saradc_disable_icu_config();
-#endif
+
     // clear fifo
     value = REG_READ(SARADC_ADC_CONFIG);
     while((value & SARADC_ADC_FIFO_EMPTY) == 0) {
@@ -200,6 +222,9 @@ static UINT32 saradc_close(void)
         value = REG_READ(SARADC_ADC_CONFIG);
     }
     saradc_int_clr();
+
+    saradc_is_busy = 0;
+	GLOBAL_INT_RESTORE();
 
 	return SARADC_SUCCESS;
 }
@@ -338,8 +363,10 @@ static UINT32 saradc_set_calibrate_val(saradc_cal_val_t *p_cal)
     }
     else
     {
+		GLOBAL_INT_RESTORE();
         return SARADC_FAILURE;
     }
+	
     GLOBAL_INT_RESTORE();
     return SARADC_SUCCESS;
 }
@@ -352,6 +379,7 @@ void saradc_config_param_init(saradc_desc_t* adc_config)
     adc_config->current_sample_data_cnt = 0;
     adc_config->filter = 0;
     adc_config->has_data = 0;
+    adc_config->all_done = 0;
     adc_config->mode = (ADC_CONFIG_MODE_CONTINUE << 0)
                       |(ADC_CONFIG_MODE_4CLK_DELAY << 2)
                       |(ADC_CONFIG_MODE_SHOULD_OFF);
@@ -425,30 +453,47 @@ void saradc_isr(void)
 {
 	UINT32 value;
 
-       
 	value = REG_READ(SARADC_ADC_CONFIG);
     while((value & SARADC_ADC_FIFO_EMPTY) == 0) 
     {
         UINT16 dac_val;
-        
+
         #if (CFG_SOC_NAME == SOC_BK7231)
         dac_val = REG_READ(SARADC_ADC_DATA)&0x03FF;
         #else
         dac_val = REG_READ(SARADC_ADC_DAT_AFTER_STA)&0xFFFF;
         #endif // (CFG_SOC_NAME == SOC_BK7231)
-        
+
         if (saradc_desc->current_sample_data_cnt < saradc_desc->data_buff_size)
         {
             saradc_desc->pData[saradc_desc->current_sample_data_cnt++] = dac_val;
             saradc_desc->has_data = 1;
+
+            if ((saradc_desc->mode & 0x03) == 0x01)
+            {
+                value = REG_READ(SARADC_ADC_CONFIG);
+                value |= (1 << SARADC_ADC_MODE_POSI) | SARADC_ADC_CHNL_EN;
+		        REG_WRITE(SARADC_ADC_CONFIG, value) ;
+            }
         }
-       
+        else
+        {
+            break;
+        }
+
         value = REG_READ(SARADC_ADC_CONFIG);
     }
+
+    if (saradc_desc->current_sample_data_cnt >= saradc_desc->data_buff_size)
+    {
+        saradc_desc->all_done = 1;
+
+        if (saradc_desc->p_Int_Handler != NULL)
+        {
+            (void)saradc_desc->p_Int_Handler();
+        }
+    }
+
     saradc_int_clr();
-
-    if(saradc_desc->p_Int_Handler != NULL) 
-        (void)saradc_desc->p_Int_Handler();
-
 }
 

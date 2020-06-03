@@ -194,12 +194,13 @@ static UINT32 i2s_ctrl(UINT32 cmd, void *param)
 
 void i2s_isr(void)
 {
+	uint32_t sts = REG_READ(PCM_STAT);
+	
+#if CONFIG_APP_MP3PLAYER
 	uint16_t i;
 	uint16_t sample[32];
 	uint16_t len = 0;
-	uint32_t sts = REG_READ(PCM_STAT);
 	
-#if (CONFIG_APP_MP3PLAYER==1)
 	if(sts & (TX_INT0|TX_UDF0))
 	{
 		len = aud_get_buffer_length((uint8_t*)sample,32*2);
@@ -217,5 +218,6 @@ void i2s_isr(void)
 		}
 	}
 #endif
+
 	REG_WRITE(PCM_STAT,sts);
 }

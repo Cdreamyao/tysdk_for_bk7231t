@@ -300,6 +300,7 @@ int do_rx_sensitivity(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
         
         rwnx_cal_set_reg_rx_ldo();
         bk7011_max_rxsens_setting();
+        rwnx_cal_dis_extra_txpa();
         
         if(mode == 1)
         {

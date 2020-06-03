@@ -487,6 +487,7 @@ void bk_wlan_sta_init(network_InitTypeDef_st *inNetworkInitPara)
         ASSERT(g_sta_param_ptr);
     }
 
+	g_sta_param_ptr->retry_cnt = 17;
     wifi_get_mac_address((u8 *)&g_sta_param_ptr->own_mac, CONFIG_ROLE_STA);
     if(!g_wlan_general_param)
     {
@@ -724,6 +725,7 @@ void bk_wlan_sta_init_adv(network_InitTypeDef_adv_st *inNetworkInitParaAdv)
         ASSERT(g_sta_param_ptr);
     }
 
+	g_sta_param_ptr->retry_cnt = 17;
     if(MAC_ADDR_NULL((u8 *)&g_sta_param_ptr->own_mac))
     {
         wifi_get_mac_address((char *)&g_sta_param_ptr->own_mac, CONFIG_ROLE_STA);

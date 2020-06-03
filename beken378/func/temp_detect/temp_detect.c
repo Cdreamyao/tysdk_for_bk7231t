@@ -1,7 +1,6 @@
 #include "include.h"
 #include "arm_arch.h"
 
-
 #include "target_util_pub.h"
 #include "mem_pub.h"
 #include "drv_model_pub.h"
@@ -12,6 +11,7 @@
 #if (!CFG_SUPPORT_ALIOS)
 #include "sys_rtos.h"
 #endif
+
 #include "rtos_pub.h"
 #include "rtos_error.h"
 #include "fake_clock_pub.h"
@@ -143,9 +143,7 @@ UINT32 temp_detect_init(UINT32 init_val)
 }
 
 UINT32 temp_detect_uninit(void)
-{
-    int ret;
-    
+{    
     if((temp_detct_handle) && (tempd_msg_que))
     {
         //temp_detect_send_msg(TMPD_EXIT);
@@ -162,9 +160,7 @@ UINT32 temp_detect_uninit(void)
 }
 
 void temp_detect_pause_timer(void)
-{
-    int ret;
-       
+{       
     if(g_temp_detect_config.detect_timer.function 
         && rtos_is_timer_running(&g_temp_detect_config.detect_timer)) 
     {
@@ -173,9 +169,7 @@ void temp_detect_pause_timer(void)
 }
 
 void temp_detect_restart_detect(void)
-{
-    int ret;
-    
+{    
     if(g_temp_detect_config.detect_timer.function && 
         !rtos_is_timer_running(&g_temp_detect_config.detect_timer)) 
     {
@@ -204,11 +198,16 @@ static UINT32 temp_detect_open(void)
 #if (CFG_SOC_NAME == SOC_BK7231)    
     turnoff_PA_in_temp_dect();
 #endif // (CFG_SOC_NAME == SOC_BK7231)
+
     GLOBAL_INT_DISABLE();
     tmp_detect_hdl = ddev_open(SARADC_DEV_NAME, &status, (UINT32)&tmp_detect_desc);
-    status = status;
-    if(DD_HANDLE_UNVALID == tmp_detect_hdl)
+    if ((DD_HANDLE_UNVALID == tmp_detect_hdl) || (SARADC_SUCCESS != status))
     {
+        if (SARADC_SUCCESS != status)
+        {
+            ddev_close(tmp_detect_hdl);
+        }
+        tmp_detect_hdl = DD_HANDLE_UNVALID;
         GLOBAL_INT_RESTORE();
         return SARADC_FAILURE;
     }
@@ -227,8 +226,6 @@ static UINT32 temp_detect_close(void)
     status = ddev_close(tmp_detect_hdl);
     if(DRV_FAILURE == status )
     {
-        //GLOBAL_INT_RESTORE();
-        //return SARADC_FAILURE;
     }
     tmp_detect_hdl = DD_HANDLE_UNVALID;
     GLOBAL_INT_RESTORE();
@@ -302,7 +299,6 @@ static void temp_detect_polling_handler(void)
     UINT16 cur_val, thre;
     
     #if (CFG_SOC_NAME != SOC_BK7231)
-    UINT16 last_detect_val;
     cur_val = tmp_detect_desc.pData[0];
     #else
     cur_val = tmp_detect_desc.pData[ADC_TEMP_BUFFER_SIZE-1];
@@ -323,12 +319,6 @@ static void temp_detect_polling_handler(void)
     bk_wlan_dtim_rf_ps_mode_do_wakeup();
     rwnx_cal_do_temp_detect(cur_val, thre, &g_temp_detect_config.last_detect_val);
     ps_clear_temp_prevent();
-    #if 0 //(CFG_SOC_NAME != SOC_BK7231)
-	// bk7231u no need xtal cali
-    if(last_detect_val != g_temp_detect_config.last_detect_val)
-        manual_cal_do_xtal_cali(cur_val, &g_temp_detect_config.last_xtal_val, 
-            g_temp_detect_config.xtal_thre_val, g_temp_detect_config.xtal_init_val);
-    #endif // (CFG_SOC_NAME != SOC_BK7231)
 
     if(g_temp_detect_config.detect_intval_change == ADC_TMEP_DETECT_INTVAL_CHANGE) 
     {
@@ -460,6 +450,7 @@ static void temp_detect_handler(void)
         sum2 += tmp_detect_desc.pData[3] + tmp_detect_desc.pData[4];
         sum = sum1 / 2 + sum1 / 2;        
         sum = sum / 2;
+        sum = sum / 4;
         tmp_detect_desc.pData[0] = sum;
         #else
         turnon_PA_in_temp_dect();
@@ -475,7 +466,6 @@ static void temp_detect_handler(void)
 
 void temp_detect_change_configuration(UINT32 intval, UINT32 thre, UINT32 dist)
 {
-    UINT32 interval;
     OSStatus err;
 
     if(intval == 0)

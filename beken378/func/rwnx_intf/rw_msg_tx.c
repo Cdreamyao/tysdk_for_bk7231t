@@ -545,13 +545,12 @@ int rw_msg_send_key_del(u8 hw_key_idx)
 int rw_msg_send_scanu_req(SCAN_PARAM_T *scan_param)
 {
     int i;
-    UINT32 channel_id;
     struct scanu_start_req *req;
 	
 #if CFG_ROLE_LAUNCH
 		if(rl_pre_sta_set_status(RL_STATUS_STA_SCANNING))
 		{
-			return 0;
+			return -1;
 		}
 #endif   
 

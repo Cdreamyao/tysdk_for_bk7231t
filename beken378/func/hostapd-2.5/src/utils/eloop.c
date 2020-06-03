@@ -17,11 +17,9 @@
 #include "sk_intf.h"
 #include "main_none.h"
 #include "mac.h"
-
 #include "rtos_error.h"
 #include "rtos_pub.h"
 #include "rw_pub.h"
-
 
 static struct eloop_data eloop;
 
@@ -189,12 +187,10 @@ int eloop_register_timeout(unsigned int secs,
 			void *user_data)
 {
 	os_time_t now_sec;	
-	uint32_t clk_time;
-    OSStatus err = kNoErr;
 	struct eloop_timeout *timeout, *tmp;
 
 	ASSERT(handler);
-	os_printf("register_timeout:%d.%d\r\n", secs, usecs);
+
 	timeout = os_zalloc(sizeof(*timeout));
 	if (timeout == NULL)
 	{
@@ -594,11 +590,7 @@ void eloop_reader_dispatch(int sk)
 
 void eloop_handler_sock_event(int flag)
 {
-    int i;
     int sk;	
-    void *eloop_data = 0;
-    void *user_data = 0;
-    eloop_sock_handler handler;
 
     // invild vif indx
     if(flag == 0xff)
@@ -769,9 +761,6 @@ void eloop_destroy(void)
 
 void eloop_free_resource(void)
 {
-	struct eloop_timeout *timeout, *prev;
-	struct os_reltime now;
-
     if(eloop.readers.count == 0) {
 	    eloop_sock_table_destroy(&eloop.readers);
         eloop.readers.table = NULL;
@@ -784,12 +773,10 @@ void eloop_free_resource(void)
     }
 }
 
-
 int eloop_terminated(void)
 {
 	return eloop.terminate || eloop.pending_terminate;
 }
-
 
 void eloop_wait_for_read_sock(int sock)
 {

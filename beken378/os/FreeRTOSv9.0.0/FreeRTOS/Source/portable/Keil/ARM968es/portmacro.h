@@ -66,8 +66,6 @@
 
     1 tab == 4 spaces!
 */
-
-
 #ifndef PORTMACRO_H
 #define PORTMACRO_H
 
@@ -114,13 +112,12 @@ typedef portSTACK_TYPE StackType_t;
 typedef long BaseType_t;
 typedef unsigned long UBaseType_t;
 
-
 #if( configUSE_16_BIT_TICKS == 1 )
 	typedef uint16_t TickType_t;
-	#define portMAX_DELAY ( TickType_t ) 0xffff
+	#define portMAX_DELAY ( TickType_t )        0xffff
 #else
 	typedef uint32_t TickType_t;
-	#define portMAX_DELAY ( TickType_t ) 0xffffffffUL
+	#define portMAX_DELAY ( TickType_t )        0xffffffffUL
 #endif
 /*-----------------------------------------------------------*/
 
@@ -136,8 +133,12 @@ typedef unsigned long UBaseType_t;
 void vPortEnterCritical( void );
 void vPortExitCritical( void );
 
-#define portENTER_CRITICAL()	    vPortEnterCritical()
-#define portEXIT_CRITICAL()			vPortExitCritical()
+#define portENTER_CRITICAL()        do{     \
+                                                GLOBAL_INT_DECLARATION();\
+                                                GLOBAL_INT_DISABLE(); 
+#define portEXIT_CRITICAL()                 \
+                                                GLOBAL_INT_RESTORE();\
+                                      }while(0)
 
 /*
  * Enable Interrupts

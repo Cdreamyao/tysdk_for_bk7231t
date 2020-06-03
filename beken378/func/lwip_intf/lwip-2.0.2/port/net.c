@@ -211,6 +211,26 @@ void user_connected_callback(FUNCPTR fn)
 	sta_connected_func = fn;
 }
 
+static void wm_netif_status_static_callback(struct netif *n)
+{
+    if (n->flags & NETIF_FLAG_UP)
+    {
+        // static IP success;
+        os_printf("using static ip...\n");
+        mhdr_set_station_status(MSG_GOT_IP);/* dhcp success*/
+
+        if(sta_ipup_cb != NULL)
+            sta_ipup_cb(NULL);
+        if(sta_connected_func != NULL)
+            (*sta_connected_func)();
+    }
+    else
+	{
+    	// static IP fail;
+    }
+	}
+	
+
 static void wm_netif_status_callback(struct netif *n)
 {
     struct dhcp *dhcp;
@@ -457,6 +477,36 @@ void ip_address_set(int iface, int dhcp, char *ip, char *mask, char*gw, char*dns
 		memcpy(&uap_ip_settings, &addr, sizeof(addr));
 }
 
+void ip_address_set_dns2(int iface, int dhcp, char *ip, char *mask, char*gw, char*dns,char *dns2)
+{
+	uint32_t tmp,tmp2;
+	struct ipv4_config addr;
+
+	memset(&addr, 0, sizeof(struct ipv4_config));
+	if (dhcp == 1) {
+		addr.addr_type = ADDR_TYPE_DHCP;
+	} else {
+		addr.addr_type = ADDR_TYPE_STATIC;
+	    tmp = inet_addr((char*)ip);
+	    addr.address = (tmp);
+	    tmp = inet_addr((char*)mask);
+	    if (tmp == 0xFFFFFFFF)
+	        tmp = 0x00FFFFFF;// if not set valid netmask, set as 255.255.255.0
+	    addr.netmask= (tmp);
+	    tmp = inet_addr((char*)gw);
+	    addr.gw = (tmp);
+
+	    tmp = inet_addr((char*)dns);
+	    addr.dns1 = (tmp);
+		tmp2 = inet_addr((char*)dns2);
+	    addr.dns2 = (tmp2);
+	}
+	if (iface == 1) // Station
+		memcpy(&sta_ip_settings, &addr, sizeof(addr));
+	else
+		memcpy(&uap_ip_settings, &addr, sizeof(addr));
+}
+
 int net_configure_address(struct ipv4_config *addr, void *intrfc_handle)
 {
 	if (!intrfc_handle)
@@ -491,9 +541,10 @@ int net_configure_address(struct ipv4_config *addr, void *intrfc_handle)
 		if_handle->gw.addr = addr->gw;
 		netifapi_netif_set_addr(&if_handle->netif, &if_handle->ipaddr,
 					&if_handle->nmask, &if_handle->gw);
+		netif_set_status_callback(&if_handle->netif,
+					wm_netif_status_static_callback);
 		netifapi_netif_set_up(&if_handle->netif);
 		net_configure_dns((struct wlan_ip_config *)addr);
-		mhdr_set_station_status(MSG_GOT_IP);
 		break;
 
 	case ADDR_TYPE_DHCP:
@@ -653,6 +704,20 @@ void net_wlan_initial(void)
 #endif /* CONFIG_IPV6 */
 }
 
+int netif_is_added(struct netif *netif)
+{
+	struct netif *t;
+
+	LOCK_TCPIP_CORE();
+	for (t = netif_list; t != NULL; t = t->next) {
+		if (t == netif)
+			return 1;
+	}
+	UNLOCK_TCPIP_CORE();
+
+	return 0;
+}
+
 void net_wlan_add_netif(void *mac)
 {
     VIF_INF_PTR vif_entry = NULL;  
@@ -683,6 +748,11 @@ void net_wlan_add_netif(void *mac)
         os_printf("net_wlan_add_netif with other role\r\n");
         return ;
     }
+
+	if (netif_is_added(wlan_if)) {
+    	os_printf("net_wlan_add_netif already added done!, vif_idx:%d\r\n", vif_idx);
+		return;
+	}
 
     wlan_if->ipaddr.addr = INADDR_ANY;
     

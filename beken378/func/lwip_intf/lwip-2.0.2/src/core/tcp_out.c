@@ -1178,6 +1178,31 @@ output_done:
   return ERR_OK;
 }
 
+/** Check if a segment's pbufs are used by someone else than TCP.
+ * This can happen on retransmission if the pbuf of this segment is still
+ * referenced by the netif driver due to deferred transmission.
+ * This is the case (only!) if someone down the TX call path called
+ * pbuf_ref() on one of the pbufs!
+ *
+ * @arg seg the tcp segment to check
+ * @return 1 if ref != 1, 0 if ref == 1
+ */
+static int
+tcp_output_segment_busy(const struct tcp_seg *seg)
+{
+  LWIP_ASSERT("tcp_output_segment_busy: invalid seg", seg != NULL);
+
+  /* We only need to check the first pbuf here:
+     If a pbuf is queued for transmission, a driver calls pbuf_ref(),
+     which only changes the ref count of the first pbuf */
+  if (seg->p->ref != 1) {
+    /* other reference found */
+    return 1;
+  }
+  /* no other references found */
+  return 0;
+}
+
 /**
  * Called by tcp_output() to actually send a TCP segment over IP.
  *
@@ -1395,17 +1420,31 @@ tcp_rst(u32_t seqno, u32_t ackno,
  *
  * @param pcb the tcp_pcb for which to re-enqueue all unacked segments
  */
-void
-tcp_rexmit_rto(struct tcp_pcb *pcb)
+err_t
+tcp_rexmit_rto_prepare(struct tcp_pcb *pcb)
 {
   struct tcp_seg *seg;
 
+  LWIP_ASSERT("tcp_rexmit_rto_prepare: invalid pcb", pcb != NULL);
+
   if (pcb->unacked == NULL) {
-    return;
+    return ERR_VAL;
   }
 
-  /* Move all unacked segments to the head of the unsent queue */
-  for (seg = pcb->unacked; seg->next != NULL; seg = seg->next);
+  /* Move all unacked segments to the head of the unsent queue.
+     However, give up if any of the unsent pbufs are still referenced by the
+     netif driver due to deferred transmission. No point loading the link further
+     if it is struggling to flush its buffered writes. */
+  for (seg = pcb->unacked; seg->next != NULL; seg = seg->next) {
+    if (tcp_output_segment_busy(seg)) {
+      LWIP_DEBUGF(TCP_RTO_DEBUG, ("tcp_rexmit_rto: segment busy\n"));
+      return ERR_VAL;
+    }
+  }
+  if (tcp_output_segment_busy(seg)) {
+    LWIP_DEBUGF(TCP_RTO_DEBUG, ("tcp_rexmit_rto: segment busy\n"));
+    return ERR_VAL;
+  }
   /* concatenate unsent queue after unacked queue */
   seg->next = pcb->unsent;
 #if TCP_OVERSIZE_DBGCHECK
@@ -1419,16 +1458,48 @@ tcp_rexmit_rto(struct tcp_pcb *pcb)
   /* unacked queue is now empty */
   pcb->unacked = NULL;
 
+  /* Don't take any RTT measurements after retransmitting. */
+  pcb->rttest = 0;
+
+  return ERR_OK;
+}
+
+/**
+ * Requeue all unacked segments for retransmission
+ *
+ * Called by tcp_slowtmr() for slow retransmission.
+ *
+ * @param pcb the tcp_pcb for which to re-enqueue all unacked segments
+ */
+void
+tcp_rexmit_rto_commit(struct tcp_pcb *pcb)
+{
+  LWIP_ASSERT("tcp_rexmit_rto_commit: invalid pcb", pcb != NULL);
+
   /* increment number of retransmissions */
   if (pcb->nrtx < 0xFF) {
     ++pcb->nrtx;
   }
-
-  /* Don't take any RTT measurements after retransmitting. */
-  pcb->rttest = 0;
-
   /* Do the actual retransmission */
   tcp_output(pcb);
+}
+
+/**
+ * Requeue all unacked segments for retransmission
+ *
+ * Called by tcp_process() only, tcp_slowtmr() needs to do some things between
+ * "prepare" and "commit".
+ *
+ * @param pcb the tcp_pcb for which to re-enqueue all unacked segments
+ */
+void
+tcp_rexmit_rto(struct tcp_pcb *pcb)
+{
+  LWIP_ASSERT("tcp_rexmit_rto: invalid pcb", pcb != NULL);
+
+  if (tcp_rexmit_rto_prepare(pcb) == ERR_OK) {
+    tcp_rexmit_rto_commit(pcb);
+  }
 }
 
 /**

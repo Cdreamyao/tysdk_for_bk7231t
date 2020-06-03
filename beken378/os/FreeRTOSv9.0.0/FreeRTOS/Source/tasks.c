@@ -4826,6 +4826,7 @@ BaseType_t xTaskIsTaskFinished( xTaskHandle xTask )
     {
         return pdFALSE;
     }
+	
     taskENTER_CRITICAL();
 
     if ( ( listIS_CONTAINED_WITHIN( &xSuspendedTaskList, &( pxTCB->xStateListItem ) ) != pdFALSE ) ||
@@ -4833,23 +4834,22 @@ BaseType_t xTaskIsTaskFinished( xTaskHandle xTask )
          ( listIS_CONTAINED_WITHIN( &xDelayedTaskList2, &( pxTCB->xStateListItem ) ) != pdFALSE ) ||
          ( listIS_CONTAINED_WITHIN( &xPendingReadyList, &( pxTCB->xStateListItem ) ) != pdFALSE ) )
     {
-        taskEXIT_CRITICAL();
+        taskEXIT_CRITICAL_EARLY();
         return pdFALSE;
     }
+		 
     for ( i = 0; i < configMAX_PRIORITIES; i++ )
     {
         if ( listIS_CONTAINED_WITHIN( &pxReadyTasksLists[ i ], &( pxTCB->xStateListItem ) ) != pdFALSE )
         {
-            taskEXIT_CRITICAL();
+            taskEXIT_CRITICAL_EARLY();
             return pdFALSE;
         }
     }
+	
     taskEXIT_CRITICAL();
+	
     return pdTRUE;
 }
-
-
-#ifdef FREERTOS_MODULE_TEST
-	#include "tasks_test_access_functions.h"
-#endif
+// eof
 

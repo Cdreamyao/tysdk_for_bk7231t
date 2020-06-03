@@ -3,9 +3,9 @@
 
 #include "wlan_ui_pub.h"
 
-#define JL_DEBUG
+#define JL_DEBUG           0
 
-#ifdef JL_DEBUG
+#if JL_DEBUG
 #define JL_PRT              os_printf
 #define JL_WARN             warning_prf
 #define JL_FATAL            fatal_prf
@@ -15,8 +15,10 @@
 #define JL_FATAL            null_prf
 #endif
 
-#define RL_LAUNCH_PERIOD    250   
-#define RL_ENTER_PERIOD     150   
+#define RL_LAUNCH_PERIOD           250   
+#define RL_ENTER_PERIOD            150   
+
+#define RL_SUPPORT_FAST_CONNECT    1
 
 typedef network_InitTypeDef_st LAUNCH_DESCR;
 
@@ -76,6 +78,18 @@ typedef struct _rlaunch_entity_
     LAUNCH_REQ rlaunch;
     FUNC_1PARAM_PTR completion_cb;
 }RL_ENTITY_T, *RL_ENTITY_PTR;
+
+#if RL_SUPPORT_FAST_CONNECT
+typedef struct _rl_bssid_info_
+{
+	uint8_t ssid[33];
+	uint8_t bssid[6];
+	uint8_t security;
+	uint8_t channel;
+	uint8_t psk[65];
+	uint8_t pwd[65];
+}RL_BSSID_INFO_T, *RL_BSSID_INFO_PTR;
+#endif
 
 #define RL_STATUS_CANCEL            0x8000
 #define RL_STATUS_CANCEL_MASK       0x8000

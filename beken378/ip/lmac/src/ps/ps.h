@@ -78,7 +78,8 @@
 #define PS_PSM_PAUSED              CO_BIT(3)
 /// A CAC period is active
 #define PS_CAC_STARTED             CO_BIT(4)
-
+/// Waiting for MAC RESET
+#define PC_WAITING_MAC_RESET       CO_BIT(5)
 //  Station is waiting for data
 #define PS_WAITING_ADD_KEY        CO_BIT(6)
 

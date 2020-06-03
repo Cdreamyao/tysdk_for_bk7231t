@@ -15,6 +15,10 @@
 #define FLASH_FATAL    null_prf
 #endif
 
+#define MODE_STD                             0
+#define MODE_DUAL                            1
+#define MODE_QUAD                            2
+
 #define FLASH_BASE                           (0x00803000)
 
 #define REG_FLASH_OPERATE_SW                 (FLASH_BASE + 0 * 4)
@@ -51,6 +55,9 @@
 #define WRSR_DATA_POSI                       (10)
 #define WRSR_DATA_MASK                       (0x00FFFF)
 #define CRC_EN                               (0x01UL << 26)
+
+#define CPU_DATA_WR_POSI                     (9)
+#define CPU_DATA_WR_MASK                     (0x01)
 
 #define M_VALUE_POST                         22
 #define M_VALUE_MASK                         0xFF

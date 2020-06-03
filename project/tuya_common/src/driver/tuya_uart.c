@@ -233,3 +233,8 @@ VOID ty_set_log_port(LOG_PORT_E port)
         set_printf_port(2);
 }
 
+UINT_T ty_uart_read_data_size(IN CONST TY_UART_PORT_E port)
+{
+    return (__ty_uart_read_data_size(port));
+}
+

@@ -503,7 +503,7 @@ STRUCT_PACKED struct ieee80211_mgmt {
 			le16 aid;
 			/* followed by Supported rates */
 			u8 variable[1];
-		} assoc_resp, reassoc_resp;
+		}GCC_PACKED assoc_resp, reassoc_resp;
 		
 		STRUCT_PACKED struct {
 			le16 capab_info;

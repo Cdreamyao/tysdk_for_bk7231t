@@ -33,6 +33,7 @@
 #include "rtos_error.h"
 #include "uart_pub.h"
 #include "mem_pub.h"
+
 /* Logic partition on flash devices */
 const bk_logic_partition_t bk7231_partitions[BK_PARTITION_MAX] =
 {
@@ -284,7 +285,7 @@ OSStatus test_flash_read_time(volatile uint32_t start_addr, uint32_t len)
 {
  	UINT32 status, time_start, time_end;
     DD_HANDLE flash_hdl;
-    uint32_t i,j,tmp;
+    uint32_t j,tmp;
 	u8 buf[256];
 	uint32_t addr = start_addr;
 	uint32_t length = len;

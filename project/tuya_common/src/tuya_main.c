@@ -50,12 +50,14 @@ typedef struct {
 
 typedef VOID (*APP_PROD_CB)(BOOL_T flag, CHAR_T rssi);
 typedef VOID (*after_mf_test_cb)(VOID);
+typedef VOID (*SET_OTA_FINISH_NOTIFY)(VOID);
 STATIC APP_PROD_CB app_prod_test = NULL;
 STATIC GW_WF_CFG_MTHD_SEL gwcm_mode = GWCM_OLD;
 STATIC CHAR_T prod_ssid_name[WF_SSID_LEN + 1] = TEST_SSID;
 static UG_PROC_S *ug_proc = NULL;
 
 after_mf_test_cb pre_app_cb = NULL;
+SET_OTA_FINISH_NOTIFY _ota_finish_notify = NULL;
 /***********************************************************
 *************************function define********************
 ***********************************************************/
@@ -93,7 +95,7 @@ STATIC UINT_T __tuya_mf_recv(OUT BYTE_T *buf,IN CONST UINT_T len)
 {
     return ty_uart_read_data(TY_UART,buf,len);
 }
-extern OPERATE_RET gw_cfg_flash_reset_fac(VOID);
+
 STATIC BOOL_T scan_test_ssid(VOID)
 {
     BOOL_T mf_close;
@@ -108,18 +110,16 @@ STATIC BOOL_T scan_test_ssid(VOID)
     memset(&read_gw_wsm, 0, sizeof(GW_WORK_STAT_MAG_S));
     op_ret = wd_gw_wsm_read(&read_gw_wsm);
 
-    if(gwcm_mode == GWCM_OLD_PROD ) {
+    if((gwcm_mode == GWCM_OLD_PROD ) || (gwcm_mode == GWCM_LOW_POWER_AUTOCFG) || (gwcm_mode == GWCM_SPCL_AUTOCFG)) {
         if(read_gw_wsm.nc_tp >= GWNS_TY_SMARTCFG) {
             return false;
         }
-    } else if (gwcm_mode == GWCM_SPCL_MODE || gwcm_mode == GWCM_LOW_POWER || gwcm_mode == GWCM_LOW_POWER_AUTOCFG){
+    } else if (gwcm_mode == GWCM_SPCL_MODE || gwcm_mode == GWCM_LOW_POWER) {
         if(read_gw_wsm.nc_tp >= GWNS_UNCFG_SMC) {
             return false;
         }
-    } else if(gwcm_mode == GWCM_SPCL_AUTOCFG) {
-         if(read_gw_wsm.nc_tp >= GWNS_TY_SMARTCFG) {
-            return false;
-        }
+    } else {
+        ;
     }
 
     wf_wk_mode_set(WWM_STATION);
@@ -150,7 +150,17 @@ STATIC BOOL_T scan_test_ssid(VOID)
     }
 
     if(app_prod_test) {
-        gw_cfg_flash_reset_fac();
+        GW_WORK_STAT_MAG_S *wsm = (GW_WORK_STAT_MAG_S *)Malloc(SIZEOF(GW_WORK_STAT_MAG_S));
+        if(NULL != wsm){
+           memset(wsm,0,SIZEOF(GW_WORK_STAT_MAG_S));
+           op_ret = wd_gw_wsm_write(wsm);
+           if(OPRT_OK != op_ret){
+               PR_ERR("wd_gw_wsm_write err:%d!", op_ret);
+           }
+           Free(wsm);
+        } else {
+            PR_ERR("erase gw inform error!");
+        }
         app_prod_test(flag, ap->rssi);
     }
     return TRUE;
@@ -326,7 +336,7 @@ OPERATE_RET __mf_gw_upgrade_notify_cb(VOID)
     if(pTempbuf == NULL) {
         PR_ERR("Malloc failed!!");
     }
-    uni_flash_set_protect(TRUE);
+
     for(i = 0; i < ug_proc->file_header.bin_len; i += BUF_SIZE) {
         rlen  = ((ug_proc->file_header.bin_len - i) >= BUF_SIZE) ? BUF_SIZE : (ug_proc->file_header.bin_len - i);
         addr = ug_proc->start_addr + i;
@@ -349,7 +359,7 @@ OPERATE_RET __mf_gw_upgrade_notify_cb(VOID)
     PR_NOTICE("the gateway upgrade success");
     Free(pTempbuf);
     Free(ug_proc);
-    //os_printf("the gateway upgrade succes,now go to reset!!\r\n");
+    //PR_DEBUG("the gateway upgrade succes,now go to reset!!");
 	#endif
     return OPRT_OK;
 }
@@ -357,7 +367,6 @@ OPERATE_RET __mf_gw_upgrade_notify_cb(VOID)
 // gateway upgrade result notify
 STATIC VOID __gw_upgrade_notify_cb(IN CONST FW_UG_S *fw, IN CONST INT_T download_result, IN PVOID_T pri_data)
 {
-    uni_flash_set_protect(TRUE);
     if(OPRT_OK == download_result) { // update success
         // verify 
         u32 ret = 0,i = 0,k = 0,rlen = 0,addr = 0;
@@ -389,6 +398,10 @@ STATIC VOID __gw_upgrade_notify_cb(IN CONST FW_UG_S *fw, IN CONST INT_T download
         Free(pTempbuf);
         Free(ug_proc);
         //os_printf("the gateway upgrade succes,now go to reset!!\r\n");
+        //OTA完成回调
+        if(_ota_finish_notify)
+            _ota_finish_notify();
+        
         SystemReset();
         return;
     }else {
@@ -428,7 +441,7 @@ STATIC OPERATE_RET __gw_upgrage_process_cb(IN CONST FW_UG_S *fw, IN CONST UINT_T
                 sum_tmp += data[i];
             } 
             PR_NOTICE("header_flag(0x%x) tail_flag(0x%x) head_sum(0x%x-0x%x) bin_sum(0x%x)",ug_proc->file_header.header_flag,ug_proc->file_header.tail_flag,ug_proc->file_header.head_sum,sum_tmp,ug_proc->file_header.bin_sum);
-            //os_printf("sw_version:%s  bin_len = 0x%x   bin_sum = 0x%x\r\n",ug_proc->file_header.sw_version, ug_proc->file_header.bin_len,ug_proc->file_header.bin_sum);
+            //PR_DEBUG("sw_version:%s  bin_len = 0x%x   bin_sum = 0x%x\r\n",ug_proc->file_header.sw_version, ug_proc->file_header.bin_len,ug_proc->file_header.bin_sum);
             if((ug_proc->file_header.header_flag !=  UG_PKG_HEAD) || (ug_proc->file_header.tail_flag !=  UG_PKG_TAIL) || (ug_proc->file_header.head_sum != sum_tmp )) {
                 memset(&ug_proc->file_header, 0, SIZEOF(UPDATE_FILE_HDR_S));
                 PR_ERR("bin_file data header err: header_flag(0x%x) tail_flag(0x%x) bin_sum(0x%x) get_sum(0x%x)",ug_proc->file_header.header_flag,ug_proc->file_header.tail_flag,ug_proc->file_header.head_sum,sum_tmp);
@@ -441,8 +454,8 @@ STATIC OPERATE_RET __gw_upgrage_process_cb(IN CONST FW_UG_S *fw, IN CONST UINT_T
                 return OPRT_OTA_BIN_SIZE_ERROR;
             }
             
-            os_printf("sw_ver:%s\r\n",ug_proc->file_header.sw_version);
-            os_printf("get right bin_file_header!!!\r\n");
+            PR_DEBUG("sw_ver:%s",ug_proc->file_header.sw_version);
+            PR_DEBUG("get right bin_file_header!!!");
             ug_proc->start_addr = UG_START_ADDR;
             ug_proc->flash_addr = ug_proc->start_addr;
             ug_proc->stat = UGS_RECV_IMG_DATA;
@@ -450,22 +463,26 @@ STATIC OPERATE_RET __gw_upgrage_process_cb(IN CONST FW_UG_S *fw, IN CONST UINT_T
             *remain_len = len - SIZEOF(UPDATE_FILE_HDR_S);
             uni_flash_set_protect(FALSE);
             uni_flash_erase(ug_proc->start_addr,ug_proc->file_header.bin_len);
-        	os_printf("erase success  remain_len: %d  file size: %d!!!!!\r\n",*remain_len,ug_proc->file_header.bin_len);
+            uni_flash_set_protect(TRUE);
+        	PR_DEBUG("erase success  remain_len: %d  file size: %d!!!!!",*remain_len,ug_proc->file_header.bin_len);
         } 
         break;
         
         case UGS_RECV_IMG_DATA: {    //dont have set lock for flash! 
-            PR_DEBUG("ug_proc->recv_data_cnt : %d,len : %d",ug_proc->recv_data_cnt,len);
+//            PR_DEBUG("ug_proc->recv_data_cnt : %d,len : %d",ug_proc->recv_data_cnt,len);
             *remain_len = len;
             if((len < RT_IMG_WR_UNIT) && (ug_proc->recv_data_cnt <= (ug_proc->file_header.bin_len - RT_IMG_WR_UNIT))) {
                 break;
             }
             write_len = len;
             while(write_len >= RT_IMG_WR_UNIT) {
+                uni_flash_set_protect(FALSE);
                 if(uni_flash_write(ug_proc->flash_addr, &data[len - write_len], RT_IMG_WR_UNIT)) {
+                    uni_flash_set_protect(TRUE);
                     PR_ERR("Write sector failed");
                     return OPRT_WR_FLASH_ERROR;
                 }
+                uni_flash_set_protect(TRUE);
                 ug_proc->flash_addr += RT_IMG_WR_UNIT;
                 ug_proc->recv_data_cnt += RT_IMG_WR_UNIT;
                 write_len -= RT_IMG_WR_UNIT; 
@@ -473,17 +490,20 @@ STATIC OPERATE_RET __gw_upgrage_process_cb(IN CONST FW_UG_S *fw, IN CONST UINT_T
             }
             if((ug_proc->recv_data_cnt > (ug_proc->file_header.bin_len - RT_IMG_WR_UNIT)) \
 				&& (write_len >= (ug_proc->file_header.bin_len - ug_proc->recv_data_cnt))) {//last 512 (write directly when get data )
+                uni_flash_set_protect(FALSE);
                 if(uni_flash_write(ug_proc->flash_addr, &data[len - write_len], write_len)) {
+                    uni_flash_set_protect(TRUE);
                     PR_ERR("Write sector failed");
                     return OPRT_WR_FLASH_ERROR;
                 }
-                os_printf("\r\nwrite success!!!\r\n");
+                uni_flash_set_protect(TRUE);
+                PR_DEBUG("\r\nwrite success!!!");
                 ug_proc->flash_addr += write_len;
                 ug_proc->recv_data_cnt += write_len;
                 write_len = 0;
                 *remain_len = 0;
             }
-            os_printf("rcv_cnt:%d，remain_len:%d\r\n",ug_proc->recv_data_cnt,*remain_len);
+            PR_DEBUG("rcv_cnt:%d，remain_len:%d",ug_proc->recv_data_cnt,*remain_len);
             if(ug_proc->recv_data_cnt >= ug_proc->file_header.bin_len) {
                 ug_proc->stat = UGS_FINISH;
                 break;
@@ -518,8 +538,10 @@ void pre_app_cfg_set(after_mf_test_cb callback)
 }
 
 
-
-
+void set_ota_finish_notify_cb(SET_OTA_FINISH_NOTIFY callback)
+{
+    _ota_finish_notify = callback;
+}
 
 
 

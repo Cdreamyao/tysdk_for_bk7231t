@@ -56,6 +56,8 @@ typedef struct {
 
 typedef VOID (*MF_GW_UG_INFORM_CB)(UINT_T file_size, UINT_T file_crc);
 typedef OPERATE_RET (*MF_UPGRADE_NOTIFY_CB)(VOID);
+typedef OPERATE_RET (*MF_USER_PARAM_CB)(IN CONST BYTE_T *data, IN CONST UINT_T len);
+
 
 /***********************************************************
 *************************variable define********************
@@ -85,6 +87,8 @@ __MF_TEST_MODULE_EXT \
 VOID mf_reg_gw_ug_cb(IN CONST MF_GW_UG_INFORM_CB mf_upgrd_inform,\
                        IN CONST GET_FILE_DATA_CB mf_upgrd_get_file,IN CONST MF_UPGRADE_NOTIFY_CB mf_upgrd_nofity);
 
+__MF_TEST_MODULE_EXT \
+VOID mf_user_param_cb_set(MF_USER_PARAM_CB cb);
 
 #ifdef __cplusplus
 }

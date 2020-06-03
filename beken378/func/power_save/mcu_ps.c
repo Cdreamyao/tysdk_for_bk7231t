@@ -25,7 +25,7 @@ static MCU_PS_INFO mcu_ps_info =
 
 MCU_PS_TSF mcu_ps_tsf_save;
 MCU_PS_MACHW_TM mcu_ps_machw_save;
-static int increase_tick = 0;
+int increase_tick = 0;
 
 #if (CFG_SUPPORT_ALIOS & CFG_USE_MCU_PS)
 static UINT32 sleep_pwm_t, wkup_type;
@@ -140,7 +140,7 @@ UINT32 mcu_power_save(UINT32 sleep_tick)
             }
 
 #if (CHIP_U_MCU_WKUP_USE_TIMER && (CFG_SOC_NAME == SOC_BK7231U))
-            param = (0xfffff & (~PWD_TIMER_32K_CLK_BIT) & (~PWD_UART2_CLK_BIT)
+            param = (0xfffff  & (~PWD_TIMER_26M_CLK_BIT) & (~PWD_TIMER_32K_CLK_BIT) & (~PWD_UART2_CLK_BIT)
                      & (~PWD_UART1_CLK_BIT)
                     );
 #else
@@ -300,11 +300,13 @@ void mcu_ps_cal_increase_tick(UINT32 *lost_p)
     if((lost <= 0) || (0 == increase_tick))
         return;
 
+    #if 0
     if((increase_tick < (-5000))|| (increase_tick > 5000))
     {
         os_printf("--itick--:%x\r\n",increase_tick);
         increase_tick = 0;
     }
+    #endif
 
     GLOBAL_INT_DISABLE();
     lost += increase_tick;
@@ -321,6 +323,38 @@ void mcu_ps_cal_increase_tick(UINT32 *lost_p)
     *lost_p = lost;
     GLOBAL_INT_RESTORE();
 }
+
+
+uint32_t mcu_ps_need_pstick(void)
+{
+    static uint32_t need_pass = 0;
+    uint32_t ret;
+    GLOBAL_INT_DECLARATION();
+    GLOBAL_INT_DISABLE();
+    if(((1 == mcu_ps_info.mcu_ps_on) && power_save_if_ps_rf_dtim_enabled()))
+    {
+        ret = FCLK_DURATION_MS;
+    }
+    
+    if(((need_pass ++)%5) == 0)
+    {
+        uint32_t lost = FCLK_DURATION_MS;
+        mcu_ps_cal_increase_tick(&lost);
+        if(!lost)
+        {
+            //os_printf("p_t\r\n");
+        }
+        ret = lost;
+    }
+    else
+    {
+        ret = FCLK_DURATION_MS;
+    }
+    GLOBAL_INT_RESTORE();
+
+    return ret;
+}
+
 
 UINT32 mcu_ps_tsf_cal(UINT64 tsf)
 {
@@ -355,30 +389,11 @@ UINT32 mcu_ps_tsf_cal(UINT64 tsf)
         tmp1 = machw - mcu_ps_tsf_save.first_tsf;
     }
 
-#if (!CFG_SUPPORT_ALIOS)
-    if(fclk < mcu_ps_tsf_save.first_tick)
-    {
-        tmp2 = (0xFFFFFFFF - mcu_ps_tsf_save.first_tick) + fclk;
-        mcu_ps_tsf_save.first_tick = fclk;
-        mcu_ps_tsf_save.first_tsf = machw;
-    }
-    else
-#endif
-    {
-        tmp2 = fclk - mcu_ps_tsf_save.first_tick;
-    }
 
+    tmp2 = (fclk - mcu_ps_tsf_save.first_tick);
 
     tmp1 /= 1000;
-
-    if(tmp1  < (UINT64)tmp2)
-    {
-        loss = (0xFFFFFFFFFFFFFFFF - (UINT64)tmp2) + tmp1 ;
-    }
-    else
-    {
-        loss = tmp1  - (UINT64)tmp2;
-    }
+    loss = (INT32)(tmp1  - (UINT64)tmp2);
 
     if(loss > 0)
     {
@@ -467,7 +482,13 @@ UINT32 mcu_ps_machw_cal(void)
     UINT32 lost;
     GLOBAL_INT_DECLARATION();
 
-    if((0 == mcu_ps_machw_save.machw_tm) || (0xdead5555 == mcu_ps_machw_save.machw_tm))
+    if(!((1 == mcu_ps_info.mcu_ps_on) && power_save_if_ps_rf_dtim_enabled()))
+    {
+        return 0;
+    }
+
+    if((0 == mcu_ps_machw_save.machw_tm) || (0xdead5555 == mcu_ps_machw_save.machw_tm)
+        || (0xdead5555 == hal_machw_time()))
     {
         mcu_ps_machw_init();
         return 0 ;
@@ -479,41 +500,12 @@ UINT32 mcu_ps_machw_cal(void)
 
     machw = hal_machw_time();
 
-
-    if(machw < mcu_ps_machw_save.machw_tm)
-    {
-        tmp1 = (0xFFFFFFFF - mcu_ps_machw_save.machw_tm) + machw;
-        if((tmp1 > 5000000) || (mcu_ps_machw_save.machw_tm < 0xFF000000))
-        {
-            goto HWCAL_RESET;
-        }
-    }
-    else
-    {
-        tmp1 = machw - mcu_ps_machw_save.machw_tm;
-    }
-
-#if (!CFG_SUPPORT_ALIOS)
-
-    if(fclk < mcu_ps_machw_save.fclk_tick)
-    {
-        tmp2 = (0xFFFFFFFF - mcu_ps_machw_save.fclk_tick) + fclk;
-    }
-    else
-#endif
-    {
-        tmp2 = fclk - mcu_ps_machw_save.fclk_tick;
-    }
+    tmp1 = (machw - mcu_ps_machw_save.machw_tm);
+   
+    tmp2 = (fclk - mcu_ps_machw_save.fclk_tick);
 
     tmp1 /= 1000;
-    if(tmp1  < (UINT32)tmp2)
-    {
-        lost = (0xFFFFFFFF - (UINT32)tmp2) + tmp1 ;
-    }
-    else
-    {
-        lost = tmp1  - (UINT32)tmp2;
-    }
+    lost = (INT32)(tmp1  - tmp2);
 
     if((lost < (0xFFFFFFFF >> 1)) && (lost > 0))
     {
@@ -526,9 +518,11 @@ UINT32 mcu_ps_machw_cal(void)
             }
         }
 
+        //os_printf("mc:%d\r\n",lost);
         mcu_ps_cal_increase_tick(&lost);
         fclk_update_tick(BK_MS_TO_TICKS(lost));
         mcu_ps_machw_init();
+        //os_printf("rmc:%d\r\n",lost);
     }
     else
     {

@@ -25,9 +25,9 @@
 #include <rthw.h>
 #endif
 
-static struct uart_callback_des uart_receive_callback[2] = {NULL, NULL};
-static struct uart_callback_des uart_txfifo_needwr_callback[2] = {NULL, NULL};
-static struct uart_callback_des uart_tx_end_callback[2] = {NULL, NULL};
+static struct uart_callback_des uart_receive_callback[2] = {{NULL}, {NULL}};
+static struct uart_callback_des uart_txfifo_needwr_callback[2] = {{NULL}, {NULL}};
+static struct uart_callback_des uart_tx_end_callback[2] = {{NULL}, {NULL}};
 
 extern uint32_t get_ate_mode_state(void);
 

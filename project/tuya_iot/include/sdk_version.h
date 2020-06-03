@@ -21,7 +21,7 @@ IOT_BV(BS_VER) 30.04 < - > IOT_SDK 4.1.4
 
 */
 
-#define BS_VER "30.05"
+#define BS_VER "30.06"
 #define PT_VER "2.2"
 #if defined(ENABLE_LAN_ENCRYPTION) && (ENABLE_LAN_ENCRYPTION==1)
 #define LAN_PRO_VER "3.3"   //必须3.3版本及以上才支持局域网加密功能

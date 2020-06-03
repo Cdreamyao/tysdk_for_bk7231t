@@ -69,6 +69,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "include.h"
 
 /* Defining MPU_WRAPPERS_INCLUDED_FROM_API_FILE prevents task.h from redefining
 all the API functions to use the MPU wrappers.  That should only be done when
@@ -833,7 +834,7 @@ Queue_t * const pxQueue = ( Queue_t * ) xQueue;
 				}
 				#endif /* configUSE_QUEUE_SETS */
 
-				taskEXIT_CRITICAL();
+				taskEXIT_CRITICAL_EARLY();
 				return pdPASS;
 			}
 			else
@@ -842,7 +843,7 @@ Queue_t * const pxQueue = ( Queue_t * ) xQueue;
 				{
 					/* The queue was full and no block time is specified (or
 					the block time has expired) so leave now. */
-					taskEXIT_CRITICAL();
+					taskEXIT_CRITICAL_EARLY();
 
 					/* Return to the original privilege level before exiting
 					the function. */
@@ -1334,7 +1335,7 @@ Queue_t * const pxQueue = ( Queue_t * ) xQueue;
 					}
 				}
 
-				taskEXIT_CRITICAL();
+				taskEXIT_CRITICAL_EARLY();
 				return pdPASS;
 			}
 			else
@@ -1343,7 +1344,7 @@ Queue_t * const pxQueue = ( Queue_t * ) xQueue;
 				{
 					/* The queue was empty and no block time is specified (or
 					the block time has expired) so leave now. */
-					taskEXIT_CRITICAL();
+					taskEXIT_CRITICAL_EARLY();
 					traceQUEUE_RECEIVE_FAILED( pxQueue );
 
 					return errQUEUE_EMPTY;

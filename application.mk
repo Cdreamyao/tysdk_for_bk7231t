@@ -373,6 +373,7 @@ SRC_C += ./beken378/func/lwip_intf/dhcpd/dhcp-server.c
 SRC_C += ./beken378/func/lwip_intf/dhcpd/dhcp-server-main.c
 SRC_C += ./beken378/func/misc/fake_clock.c
 SRC_C += ./beken378/func/misc/target_util.c
+SRC_C += ./beken378/func/misc/start_type.c
 SRC_C += ./beken378/func/power_save/power_save.c
 SRC_C += ./beken378/func/power_save/manual_ps.c
 SRC_C += ./beken378/func/power_save/mcu_ps.c
@@ -394,6 +395,7 @@ SRC_C += ./beken378/func/uart_debug/command_line.c
 SRC_C += ./beken378/func/uart_debug/command_table.c
 SRC_C += ./beken378/func/uart_debug/udebug.c
 SRC_C += ./beken378/func/user_driver/BkDriverFlash.c
+SRC_C += ./beken378/func/user_driver/BkDriverRng.c
 SRC_C += ./beken378/func/user_driver/BkDriverGpio.c
 SRC_C += ./beken378/func/user_driver/BkDriverPwm.c
 SRC_C += ./beken378/func/user_driver/BkDriverUart.c
@@ -575,7 +577,7 @@ DEPENDENCY_OS_LIST = $(addprefix $(OBJ_DIR)/,$(patsubst %.c,%.d,$(SRC_OS_LIST)))
 # Compile options
 # -------------------------------------------------------------------
 CFLAGS =
-CFLAGS += -g -mthumb -mcpu=arm968e-s -march=armv5te -mthumb-interwork -mlittle-endian -Os -std=c99 -ffunction-sections -Wall -fsigned-char -fdata-sections -Wunknown-pragmas -nostdlib
+CFLAGS += -g -mthumb -mcpu=arm968e-s -march=armv5te -mthumb-interwork -mlittle-endian -Os -std=c99 -ffunction-sections -Wall -fsigned-char -fdata-sections -Wunknown-pragmas -nostdlib -Wno-unused-function -Wno-unused-but-set-variable
 
 OSFLAGS =
 OSFLAGS += -g -marm -mcpu=arm968e-s -march=armv5te -mthumb-interwork -mlittle-endian -Os -std=c99 -ffunction-sections -Wall -fsigned-char -fdata-sections -Wunknown-pragmas
@@ -584,7 +586,7 @@ ASMFLAGS =
 ASMFLAGS += -g -marm -mthumb-interwork -mcpu=arm968e-s -march=armv5te -x assembler-with-cpp
 
 LFLAGS = 
-LFLAGS += -g -Wl,--gc-sections -marm -mcpu=arm968e-s -mthumb-interwork -nostdlib
+LFLAGS += -g -Wl,--gc-sections -marm -mcpu=arm968e-s -mthumb-interwork -nostdlib -Xlinker -Map=tuya.map  -Wl,-wrap,malloc -Wl,-wrap,free  -Wl,-wrap,zalloc
 
 LIBFLAGS =
 LIBFLAGS += -L./beken378/lib/ -lrwnx

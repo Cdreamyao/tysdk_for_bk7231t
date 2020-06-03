@@ -103,7 +103,7 @@ typedef int sys_prot_t;
 #define BYTE_ORDER          LITTLE_ENDIAN
 #endif
 
-#define LWIP_RAND()        ((uint32_t)rand())
+#define LWIP_RAND()        ((uint32_t)bk_rand())
 #endif
 // eof
 

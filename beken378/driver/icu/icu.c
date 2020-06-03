@@ -43,9 +43,11 @@ UINT32 icu_ctrl(UINT32 cmd, void *param)
 {
     UINT32 ret;
     UINT32 reg;
+	GLOBAL_INT_DECLARATION();
 
     ret = ICU_SUCCESS;
 
+	GLOBAL_INT_DISABLE();
     switch(cmd)
     {
     case CMD_CONF_PCLK_26M:
@@ -57,7 +59,6 @@ UINT32 icu_ctrl(UINT32 cmd, void *param)
         #endif // (CFG_SOC_NAME == SOC_BK7231)
         REG_WRITE(ICU_PERI_CLK_MUX, reg);
         break;
-
 
     case CMD_CONF_PWM_LPOCLK:
         reg = REG_READ(ICU_PWM_CLK_MUX);
@@ -181,7 +182,8 @@ UINT32 icu_ctrl(UINT32 cmd, void *param)
     default:
         break;
     }
-
+	GLOBAL_INT_RESTORE();
+	
     return ret;
 }
 

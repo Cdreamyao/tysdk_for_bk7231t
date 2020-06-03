@@ -146,6 +146,7 @@ tcp_init(void)
 {
 #if LWIP_RANDOMIZE_INITIAL_LOCAL_PORTS && defined(LWIP_RAND)
   tcp_port = TCP_ENSURE_LOCAL_PORT_RANGE(LWIP_RAND());
+  os_printf("tcp_port:%d\r\n", tcp_port);
 #endif /* LWIP_RANDOMIZE_INITIAL_LOCAL_PORTS && defined(LWIP_RAND) */
 }
 
@@ -1038,21 +1039,25 @@ tcp_slowtmr_start:
         }
       } else {
         /* Increase the retransmission timer if it is running */
-        if (pcb->rtime >= 0) {
+        if ((pcb->rtime >= 0) && (pcb->rtime < 0x7FFF)) {
           ++pcb->rtime;
         }
 
-        if (pcb->unacked != NULL && pcb->rtime >= pcb->rto) {
+        if (pcb->rtime >= pcb->rto) {
           /* Time for a retransmission. */
           LWIP_DEBUGF(TCP_RTO_DEBUG, ("tcp_slowtmr: rtime %"S16_F
                                       " pcb->rto %"S16_F"\n",
                                       pcb->rtime, pcb->rto));
-
+          /* If prepare phase fails but we have unsent data but no unacked data,
+             still execute the backoff calculations below, as this means we somehow
+             failed to send segment. */
+          if ((tcp_rexmit_rto_prepare(pcb) == ERR_OK) || ((pcb->unacked == NULL) && (pcb->unsent != NULL))) {
           /* Double retransmission time-out unless we are trying to
            * connect to somebody (i.e., we are in SYN_SENT). */
           if (pcb->state != SYN_SENT) {
             u8_t backoff_idx = LWIP_MIN(pcb->nrtx, sizeof(tcp_backoff)-1);
-            pcb->rto = ((pcb->sa >> 3) + pcb->sv) << tcp_backoff[backoff_idx];
+              int calc_rto = ((pcb->sa >> 3) + pcb->sv) << tcp_backoff[backoff_idx];
+              pcb->rto = (s16_t)LWIP_MIN(calc_rto, 0x7FFF);
           }
 
           /* Reset the retransmission timer. */
@@ -1062,7 +1067,7 @@ tcp_slowtmr_start:
           eff_wnd = LWIP_MIN(pcb->cwnd, pcb->snd_wnd);
           pcb->ssthresh = eff_wnd >> 1;
           if (pcb->ssthresh < (tcpwnd_size_t)(pcb->mss << 1)) {
-            pcb->ssthresh = (pcb->mss << 1);
+              pcb->ssthresh = (tcpwnd_size_t)(pcb->mss << 1);
           }
           pcb->cwnd = pcb->mss;
           LWIP_DEBUGF(TCP_CWND_DEBUG, ("tcp_slowtmr: cwnd %"TCPWNDSIZE_F
@@ -1071,7 +1076,8 @@ tcp_slowtmr_start:
 
           /* The following needs to be called AFTER cwnd is set to one
              mss - STJ */
-          tcp_rexmit_rto(pcb);
+            tcp_rexmit_rto_commit(pcb);
+          }
         }
       }
     }
@@ -1608,7 +1614,7 @@ tcp_alloc(u8_t prio)
     /* As initial send MSS, we use TCP_MSS but limit it to 536.
        The send MSS is updated when an MSS option is received. */
     pcb->mss = INITIAL_MSS;
-    pcb->rto = 3000 / TCP_SLOW_INTERVAL;
+    pcb->rto = 2000 / TCP_SLOW_INTERVAL;
     pcb->sv = 3000 / TCP_SLOW_INTERVAL;
     pcb->rtime = -1;
     pcb->cwnd = 1;

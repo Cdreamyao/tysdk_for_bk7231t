@@ -278,7 +278,7 @@ void sctrl_ble_ps_init(void)
 
 void sctrl_init(void)
 {
-    UINT32 param,reg;
+    UINT32 param;
 
     sddev_register_dev(SCTRL_DEV_NAME, &sctrl_op);
 
@@ -390,7 +390,6 @@ void sctrl_init(void)
 	#if (RHINO_CONFIG_CPU_PWR_MGMT & CFG_USE_STA_PS)
 	sctrl_mcu_init();
 	#endif
-
 }
 
 void sctrl_exit(void)
@@ -444,8 +443,6 @@ void sctrl_ps_dump()
 void sctrl_hw_sleep(UINT32 peri_clk)
 {    
     UINT32 reg;
-    DD_HANDLE flash_hdl;
-    UINT32 status;
     PS_DEBUG_DOWN_TRIGER;
 
     if(4 == flash_get_line_mode())
@@ -824,7 +821,6 @@ void sctrl_mcu_sleep(UINT32 peri_clk)
 }
 UINT32 sctrl_mcu_wakeup(void)
 {
-    UINT32 reg;
     UINT32 wkup_type;
 
     if(sctrl_mcu_ps_info.hw_sleep == 1)
@@ -1021,7 +1017,6 @@ void sctrl_enter_rtos_idle_sleep(UINT32 peri_clk)
 {
     DD_HANDLE flash_hdl;
     UINT32 status;
-    UINT32 param;
     UINT32 reg;
     int     i;
 
@@ -1193,9 +1188,7 @@ void sctrl_enter_rtos_deep_sleep(PS_DEEP_CTRL_PARAM deep_param)
 {
     DD_HANDLE flash_hdl;
     UINT32 status;
-    UINT32 param;
     UINT32 reg;
-    UINT32 i;
 
 	uart_wait_tx_over();
     /* close all peri clock*/
@@ -1406,8 +1399,10 @@ UINT32 sctrl_ctrl(UINT32 cmd, void *param)
 {
     UINT32 ret;
     UINT32 reg;
+	GLOBAL_INT_DECLARATION();
 
     ret = SCTRL_SUCCESS;
+	GLOBAL_INT_DISABLE();
     switch(cmd)
     {
 #if PS_SUPPORT_MANUAL_SLEEP
@@ -1706,6 +1701,7 @@ UINT32 sctrl_ctrl(UINT32 cmd, void *param)
         ret = SCTRL_FAILURE;
         break;
     }
+	GLOBAL_INT_RESTORE();
 
     return ret;
 }

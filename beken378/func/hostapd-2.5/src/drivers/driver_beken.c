@@ -1310,6 +1310,8 @@ static void hostap_poll_client_null_frame(void *priv, const u8 *own_addr,
 	param.u.poll_null_data.sta_addr = addr;
 		
 	ret = hostapd_ioctl(drv, &param, sizeof(param));
+
+	(void)ret;
 	
 	return;
 }

@@ -39,9 +39,10 @@ typedef struct
 {
     UINT16 *pData;
     volatile UINT8 current_sample_data_cnt;
-    UINT8 current_read_data_cnt;
+    volatile UINT8 current_read_data_cnt;
     UINT8 data_buff_size;
-    UINT8 has_data; /* 0: has data      1: no data*/
+    volatile UINT8 has_data; /* 1: has data      0: no data*/
+    volatile UINT8 all_done; /* 1: all done      0: still sampling*/
     UINT8 channel;
     /* mode:     ADC mode
      * bit[0:1]: ADC operation mode
@@ -83,6 +84,7 @@ typedef struct _saradc_calibrate_val_
 /*******************************************************************************
 * Function Declarations
 *******************************************************************************/
+void saradc_disable(void);
 void saradc_init(void);
 void saradc_exit(void);
 void saradc_isr(void);

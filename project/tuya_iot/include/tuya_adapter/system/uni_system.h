@@ -27,6 +27,17 @@ typedef UINT_T SYS_TICK_T;
 #endif
 
 
+typedef enum {
+    TY_RST_POWER_OFF = 0,
+    TY_RST_HARDWARE_WATCHDOG,
+    TY_RST_FATAL_EXCEPTION,
+    TY_RST_SOFTWARE_WATCHDOG,
+    TY_RST_SOFTWARE,
+    TY_RST_DEEPSLEEP,
+    TY_RST_HARDWARE,
+    TY_RST_OTHER = 0xAA,
+    TY_RST_UNSUPPORT = 0xFF,
+} TY_RST_REASON_E;
 
 /***********************************************************
 *  Function: GetSystemTickCount
@@ -124,13 +135,12 @@ INT_T SysGetHeapSize(VOID);
 _UNI_SYSTEM_EXT \
 CHAR_T *GetSerialNo(VOID);
 
-/***********************************************************
-*  Function: system_get_rst_info
-*  Desc:     get hardware reboot reason
-*  Return:   hardware reboot reason
-***********************************************************/
-_UNI_SYSTEM_EXT \
-CHAR_T *system_get_rst_info(VOID);
+/**
+ * @brief tuya_hal_system_get_rst_info用于获取硬件重启原因
+ * 
+ * @return 设备重启原因
+ */
+TY_RST_REASON_E tuya_hal_system_get_rst_info(VOID);
 
 
 /***********************************************************

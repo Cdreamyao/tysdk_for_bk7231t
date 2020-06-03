@@ -656,7 +656,6 @@ int hostapd_main_entry(int argc, char *argv[])
 
 static void hostapd_thread_main( void *arg )
 {
-	OSStatus ret;
 	int daemonize = 0;
     char *pid_file = NULL;
 
@@ -717,6 +716,8 @@ void hostapd_poll(void *param)
 	{
     	ret = rtos_set_semaphore(&hostapd_sema);
 	}
+	
+	(void)ret;
 }
 
 int hostapd_channel_switch(int new_freq)

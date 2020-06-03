@@ -72,6 +72,12 @@ int sa_station_send_associate_cmd(CONNECT_PARAM_T *connect_param)
         }
     }
 
+    if(rw_ieee80211_is_scan_rst_in_countrycode(rw_ieee80211_get_chan_id(connect_param->chan.freq)) == 0)
+    {
+        os_printf("ch:%d not in countrycode\r\n", connect_param->chan.freq);
+        return -1;
+    }
+
     ret = rw_msg_send_sm_connect_req(connect_param, &sm_connect_cfm);
     if(ret)
         return ret;
